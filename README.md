@@ -14,6 +14,23 @@ Sound starts muted because browsers require it for autoplay — click anywhere
 (or the *Tap for sound* pill) to enable audio. Native controls give you
 seek/volume/fullscreen; `Space` toggles play/pause.
 
+## 200% audio (double volume)
+
+Browsers cap the `volume` property at 1.0 (100%), so the player inserts a
+Web Audio `GainNode` with **`BOOST = 2.0`** (200%) into the audio path.
+To change the level, edit this line in `index.html`:
+
+```js
+const BOOST = 2.0;   // 2.0 = 200% / double volume, 1.5 = 150%, 1.0 = normal
+```
+
+Notes:
+- Boost applies to local/same-origin videos. A cross-origin `?v=<url>` video
+  stays at 100% (routing it through Web Audio without CORS headers would
+  silence it entirely).
+- Doubling amplitude can clip (crackle) on already-loud parts — if you hear
+  distortion, lower `BOOST` to ~1.5.
+
 ## About the public site
 
 The GitHub Pages copy cannot read a file that lives on your computer, so it

@@ -48,12 +48,40 @@ const v=document.getElementById('v'),
 const q=new URLSearchParams(location.search).get('v');
 if(q){ v.innerHTML=''; v.src=q; }
 
+/* ---- 200% audio ----
+   Browsers cap the element's volume at 1.0, so the extra 2x comes from a
+   Web Audio GainNode inserted into the player. Local/page sources are boosted;
+   cross-origin ?v= videos are left untouched (Web Audio would silence those
+   without CORS headers). */
+const BOOST = 2.0;                 // 2.0 = 200% / double volume
+let actx = null, gain = null;
+(function initBoost(){
+  try{
+    if(q && /^(https?:)?\/\//i.test(q) && !q.startsWith(location.origin)) return; // remote -> keep 100%
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    actx = new AC();
+    const src = actx.createMediaElementSource(v);
+    gain = actx.createGain();
+    gain.gain.value = BOOST;       // the actual 200%
+    src.connect(gain); gain.connect(actx.destination);
+    window.__audio = { actx, gain, src, BOOST };
+  }catch(e){ actx = null; gain = null; }
+})();
+
 /* instant playback: muted autoplay always allowed -> video shows immediately */
 v.play().catch(()=>{ document.addEventListener('pointerdown',()=>v.play().catch(()=>{}),{once:true}); });
 
 /* first tap anywhere turns the sound on (autoplay policy keeps it muted until then) */
 let sound=false;
-function unmute(){ if(sound) return; sound=true; v.muted=false; v.play().catch(()=>{}); pill.classList.add('gone'); }
+function unmute(){
+  if(sound) return;
+  sound=true; v.muted=false; v.play().catch(()=>{}); pill.classList.add('gone');
+  if(actx && actx.state!=='running') actx.resume().catch(()=>{});   // boost needs a running context
+}
+v.addEventListener('volumechange',()=>{                              // unmuting via native controls too
+  if(!v.muted && actx && actx.state!=='running') actx.resume().catch(()=>{});
+});
 pill.addEventListener('click',e=>{e.stopPropagation();unmute();});
 document.addEventListener('pointerdown',unmute);
 
