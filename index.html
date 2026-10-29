@@ -59,7 +59,11 @@ document.addEventListener('pointerdown',unmute);
 
 /* if no source could be loaded at all -> show the notice instead of a dead player */
 v.addEventListener('error',show);
-function show(){ v.style.display='none'; pill.style.display='none'; fb.style.display='flex'; }
+const poll=setInterval(()=>{
+  if(v.readyState>0){ clearInterval(poll); return; }              // started fine
+  if(v.error || v.networkState===3){ clearInterval(poll); show(); } // nothing to load
+},600);
+function show(){ v.style.display='none'; pill.style.display='none'; fb.style.display='flex'; clearInterval(poll); }
 
 /* space = play/pause */
 document.addEventListener('keydown',e=>{
