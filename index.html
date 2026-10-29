@@ -3,619 +3,68 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Drive</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 87.3 78'%3E%3Cpath d='m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z' fill='%230066da'/%3E%3Cpath d='m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z' fill='%2300ac47'/%3E%3Cpath d='m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z' fill='%23ea4335'/%3E%3Cpath d='m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z' fill='%2300832d'/%3E%3Cpath d='m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z' fill='%232684fc'/%3E%3Cpath d='m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z' fill='%23ffba00'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<title>Video</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{--txt:#1f1f1f;--mut:#5f6368;--bd:#e8eaed;--hov:#f1f3f4;--blue:#0b57d0;--blue2:#1a73e8;--sel:#e8f0fe;--tonal:#d3e3fd;--hdr:64px;--side:256px}
-html,body{height:100%}
-body{font-family:"Google Sans","Product Sans",Roboto,"Segoe UI",Arial,sans-serif;color:var(--txt);background:#fff;-webkit-font-smoothing:antialiased;overflow:hidden}
-button{font:inherit;background:none;border:0;cursor:pointer;color:inherit}
-a{text-decoration:none;color:inherit}
-svg{display:block}
-::-webkit-scrollbar{width:12px;height:12px}
-::-webkit-scrollbar-thumb{background:#dadce0;border:3px solid #fff;border-radius:8px}
-::-webkit-scrollbar-thumb:hover{background:#bdc1c6}
-::-webkit-scrollbar-track{background:transparent}
-
-/* ---------- video opener ---------- */
-#opener{position:fixed;inset:0;z-index:9999;background:#000;opacity:1;transition:opacity .55s ease}
-#opener.hide{opacity:0;pointer-events:none}
-#opener.gone{display:none}
-#openerVideo{width:100%;height:100%;object-fit:cover;display:block;background:#000}
-.op-chip{position:absolute;top:22px;left:22px;display:flex;align-items:center;gap:11px;padding:9px 18px 9px 13px;border-radius:999px;background:rgba(0,0,0,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:#fff;font-size:15px;font-weight:500;letter-spacing:.2px;pointer-events:none}
-.op-chip svg{width:24px;height:22px}
-.op-btn{position:absolute;bottom:30px;display:flex;align-items:center;justify-content:center;gap:9px;height:46px;padding:0 24px;border-radius:999px;background:rgba(255,255,255,.94);color:#202124;font-size:15px;font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,.45);transition:.15s}
-.op-btn:hover{background:#fff;transform:translateY(-1px)}
-.op-btn svg{width:20px;height:20px;fill:currentColor}
-#skipBtn{right:30px}
-#soundBtn{left:30px;width:46px;padding:0}
-#opBar{position:absolute;left:0;bottom:0;height:4px;width:100%;background:rgba(255,255,255,.22)}
-#opBar i{display:block;height:100%;width:0;background:var(--blue2);transition:width .25s linear}
-
-/* ---------- top bar ---------- */
-#top{position:fixed;top:0;left:0;right:0;height:var(--hdr);background:#fff;display:flex;align-items:center;gap:6px;padding:0 16px 0 12px;z-index:100}
-.ibtn{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--mut);flex:none;transition:background .12s}
-.ibtn:hover{background:var(--hov)}
-.ibtn svg{width:24px;height:24px;fill:currentColor}
-#logo{display:flex;align-items:center;padding:6px 8px;flex:none}
-#logo svg{width:29px;height:26px}
-.search{flex:1;max-width:720px;height:48px;margin:0 10px;display:flex;align-items:center;gap:15px;background:var(--hov);border-radius:24px;padding:0 10px 0 16px;transition:box-shadow .15s,background .15s;color:var(--mut)}
-.search:hover{background:#e9eaed}
-.search:focus-within{background:#fff;box-shadow:0 1px 6px rgba(32,33,36,.28)}
-.search>svg{width:22px;height:22px;fill:currentColor;flex:none}
-.search input{flex:1;border:0;outline:0;background:none;font:inherit;font-size:16px;color:var(--txt);min-width:0}
-.search input::placeholder{color:var(--mut)}
-#clearBtn{display:none}
-#clearBtn.on{display:flex}
-.tb-right{display:flex;align-items:center;gap:2px;margin-left:auto}
-#avatarBtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;margin-left:6px;flex:none}
-#avatarBtn:hover{background:var(--hov)}
-.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1a73e8,#0d55c4);color:#fff;display:grid;place-items:center;font-size:15px;font-weight:500}
-
-/* ---------- sidebar ---------- */
-#side{position:fixed;top:var(--hdr);left:0;bottom:0;width:var(--side);background:#fff;padding:6px 12px 18px;display:flex;flex-direction:column;z-index:90;overflow-y:auto}
-#newBtn{display:flex;align-items:center;gap:13px;height:50px;padding:0 22px 0 16px;border-radius:25px;background:#fff;box-shadow:0 1px 2px rgba(60,64,67,.3),0 1px 3px 1px rgba(60,64,67,.15);font-size:15px;font-weight:500;color:#3c4043;align-self:flex-start;margin:6px 0 14px;transition:background .12s,box-shadow .12s}
-#newBtn:hover{background:#f8f9fa;box-shadow:0 1px 3px rgba(60,64,67,.35),0 2px 6px 2px rgba(60,64,67,.18)}
-#newBtn svg{width:24px;height:24px;fill:#5f6368}
-.nav{display:flex;flex-direction:column;gap:2px}
-.nav-item{display:flex;align-items:center;gap:18px;height:40px;padding:0 14px;border-radius:20px;font-size:14px;color:#3c4043;width:100%;text-align:left;transition:background .12s}
-.nav-item:hover{background:var(--hov)}
-.nav-item.active{background:var(--tonal);color:var(--blue);font-weight:500}
-.nav-item svg{width:20px;height:20px;fill:currentColor;flex:none}
-.storage{margin-top:auto;padding:16px 6px 0;border-top:1px solid var(--bd)}
-.storage h4{font-size:14px;font-weight:500;margin-bottom:5px}
-.storage p{font-size:12px;color:var(--mut);margin-bottom:9px}
-.storage .bar{height:4px;border-radius:2px;background:var(--bd);overflow:hidden}
-.storage .bar i{display:block;height:100%;width:27%;background:var(--blue2);border-radius:2px}
-.storage a{display:inline-block;margin-top:12px;font-size:13px;color:var(--blue2);font-weight:500}
-.storage a:hover{text-decoration:underline}
-#drawerOv{display:none;position:fixed;inset:var(--hdr) 0 0 0;background:rgba(32,33,36,.4);z-index:85}
-
-/* ---------- main ---------- */
-#main{position:fixed;top:var(--hdr);left:var(--side);right:0;bottom:0;overflow-y:auto;padding:4px 28px 80px;background:#fff}
-.main-head{position:sticky;top:0;background:#fff;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:16px;height:56px;padding-top:6px}
-.view-title{display:flex;align-items:center;gap:4px;font-size:16px;font-weight:500;cursor:pointer;border-radius:8px;padding:6px 8px;margin-left:-8px}
-.view-title:hover{background:var(--hov)}
-.view-title svg{width:20px;height:20px;fill:var(--mut)}
-.head-actions{display:flex;align-items:center;gap:2px}
-.head-actions .ibtn.on{background:var(--tonal);color:var(--blue)}
-.sec-label{font-size:16px;font-weight:500;color:#3c4043;padding:10px 4px 12px}
-.sug-row{display:flex;gap:16px;overflow-x:auto;padding:0 4px 22px}
-.sug{flex:0 0 258px;border:1px solid var(--bd);border-radius:14px;overflow:hidden;background:#fff;cursor:pointer;transition:box-shadow .13s,border-color .13s;text-align:left}
-.sug:hover{box-shadow:0 1px 3px rgba(60,64,67,.28);border-color:#dadce0}
-.sug .pv{height:138px;display:flex;align-items:center;justify-content:center;background:#fff;border-bottom:1px solid var(--bd);position:relative;overflow:hidden}
-.sug .pv svg.big{width:64px;height:64px}
-.sug .nm{padding:11px 14px 3px;font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sug .mt{padding:0 14px 13px;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-/* list view */
-.list{padding:0 2px}
-.lrow{display:grid;grid-template-columns:minmax(240px,1fr) 168px 146px 104px 44px;align-items:center;height:40px;padding:0 8px;border-radius:8px;font-size:14px;color:var(--mut)}
-.lrow:hover{background:var(--hov)}
-.lrow.sel{background:var(--sel)}
-.lhead{position:sticky;top:56px;height:38px;font-size:12px;font-weight:500;color:var(--mut);border-bottom:1px solid var(--bd);border-radius:0;background:#fff;z-index:15;cursor:pointer}
-.lhead:hover{background:none}
-.lhead .c-name{display:flex;align-items:center;gap:6px}
-.lhead svg{width:16px;height:16px;fill:var(--mut)}
-.c-name{display:flex;align-items:center;gap:16px;min-width:0;color:var(--txt);font-size:16px}
-.c-name>svg,.c-name .thumbmini{width:24px;height:24px;flex:none}
-.c-name .fname{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.c-name .star{width:15px!important;height:15px!important;fill:#f9ab00!important;flex:none}
-.lrow .c-owner,.lrow .c-mod,.lrow .c-size{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:12px;font-size:14px}
-.lrow .c-act{display:flex;justify-content:flex-end;opacity:0}
-.lrow:hover .c-act{opacity:1}
-.lrow .c-act .ibtn{width:32px;height:32px}
-.lrow .c-act .ibtn svg{width:20px;height:20px}
-.thumbmini{border-radius:3px;display:flex;align-items:center;justify-content:center}
-.thumbmini svg{width:14px;height:14px;fill:#fff}
-
-/* grid view */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(184px,1fr));gap:20px 16px;padding:4px 4px}
-.gcard{text-align:left;cursor:pointer;border-radius:12px;padding:2px}
-.gthumb{height:148px;border:1px solid var(--bd);border-radius:12px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;position:relative;transition:box-shadow .13s,background .13s}
-.gcard:hover .gthumb{box-shadow:0 1px 3px rgba(60,64,67,.3);background:#fbfcfd}
-.gcard.sel .gthumb{border-color:#aecbfa;background:#f5faff}
-.gthumb svg.big{width:66px;height:66px}
-.gname{display:flex;align-items:center;gap:6px;padding:10px 6px 2px;font-size:14px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gname .star{width:14px;height:14px;fill:#f9ab00;flex:none}
-.gmeta{padding:0 6px;font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dur{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.75);color:#fff;font-size:11px;font-weight:500;padding:2px 6px;border-radius:4px}
-.play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.play svg{width:46px;height:46px;fill:rgba(255,255,255,.92);filter:drop-shadow(0 1px 4px rgba(0,0,0,.5))}
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:70px 0;color:var(--mut);font-size:15px}
-.empty svg{width:72px;height:72px;fill:#dadce0}
-
-/* ---------- menus ---------- */
-.menu{position:fixed;z-index:500;min-width:220px;background:#fff;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.2),0 0 1px rgba(0,0,0,.2);padding:8px 0;display:none;animation:pop .12s ease}
-.menu.on{display:block}
-@keyframes pop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-.menu .mi{display:flex;align-items:center;gap:16px;width:100%;padding:0 20px;height:40px;font-size:14px;color:#3c4043;text-align:left}
-.menu .mi:hover{background:var(--hov)}
-.menu .mi svg{width:20px;height:20px;fill:#5f6368;flex:none}
-.menu .sep{height:1px;background:var(--bd);margin:8px 0}
-.menu .mtitle{padding:6px 20px 8px;font-size:13px;color:var(--mut)}
-
-/* ---------- details pane ---------- */
-#details{position:fixed;top:var(--hdr);right:-320px;bottom:0;width:320px;background:#fff;border-left:1px solid var(--bd);z-index:80;transition:right .2s ease;padding:18px 22px;overflow-y:auto}
-#details.on{right:0}
-#details h3{font-size:16px;font-weight:500;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
-#details .dt-close{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--mut)}
-#details .dt-close:hover{background:var(--hov)}
-#details .dt-close svg{width:20px;height:20px;fill:currentColor}
-.dt-hero{display:flex;align-items:center;justify-content:center;height:150px;border:1px solid var(--bd);border-radius:12px;margin:14px 0 18px;overflow:hidden}
-.dt-hero svg.big{width:64px;height:64px}
-.dl{display:flex;flex-direction:column;gap:14px}
-.dl .row{display:flex;flex-direction:column;gap:3px}
-.dl .k{font-size:12px;color:var(--mut)}
-.dl .v{font-size:14px;color:var(--txt)}
-
-/* ---------- preview modal ---------- */
-#modal{position:fixed;inset:0;background:rgba(32,33,36,.92);z-index:600;display:none;align-items:center;justify-content:center;padding:40px}
-#modal.on{display:flex}
-#modal .sheet{background:#fff;border-radius:12px;width:min(860px,100%);max-height:100%;overflow:auto;padding:0}
-#modal .sheet-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--bd);font-size:15px;font-weight:500;gap:12px}
-#modal .sheet-bar .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#modal .pv-big{min-height:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:44px;background:#fafbfc}
-#modal .pv-big svg.big{width:110px;height:110px}
-#modal .pv-big .hint{font-size:14px;color:var(--mut)}
-
-/* ---------- snackbar ---------- */
-#snack{position:fixed;left:50%;bottom:30px;transform:translate(-50%,80px);background:#3c4043;color:#fff;font-size:14px;padding:14px 22px;border-radius:6px;z-index:900;opacity:0;transition:.2s;pointer-events:none;max-width:90vw}
-#snack.on{opacity:1;transform:translate(-50%,0)}
-
-@media (max-width:960px){
-  #side{transform:translateX(-100%);transition:transform .2s;box-shadow:0 0 24px rgba(0,0,0,.15)}
-  #side.open{transform:none}
-  #drawerOv.on{display:block}
-  #main{left:0}
-  .lrow{grid-template-columns:minmax(160px,1fr) 130px 44px}
-  .c-owner,.c-size{display:none}
-  .lhead .c-owner,.lhead .c-size{display:none}
-  #details{width:min(320px,90vw)}
-}
+  html,body{height:100%;margin:0;background:#000;overflow:hidden}
+  #v{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000;outline:none}
+  #fallback{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    gap:12px;padding:24px;text-align:center;background:#000;color:#9aa0a6;
+    font:15px/1.6 "Segoe UI",Roboto,Arial,sans-serif}
+  #fallback b{color:#e8eaed;font-size:18px;font-weight:500}
+  #fallback code{background:#1f1f1f;color:#8ab4f8;padding:4px 8px;border-radius:5px;font-size:13px}
+  #sound{position:fixed;top:20px;left:20px;display:flex;align-items:center;gap:9px;height:42px;padding:0 18px;
+    border:0;border-radius:21px;cursor:pointer;background:rgba(255,255,255,.92);color:#202124;z-index:5;
+    font:500 14px "Segoe UI",Roboto,Arial,sans-serif;box-shadow:0 1px 5px rgba(0,0,0,.5)}
+  #sound:hover{background:#fff}
+  #sound.gone{display:none}
+  #sound svg{width:18px;height:18px;fill:currentColor}
 </style>
 </head>
 <body>
 
-<!-- ============ VIDEO OPENER ============ -->
-<div id="opener">
-  <video id="openerVideo" muted autoplay playsinline preload="auto">
-    <source src="opener.local.mp4" type="video/mp4">
-    <source src="assets/opener.mp4" type="video/mp4">
-  </video>
-  <div class="op-chip">
-    <svg viewBox="0 0 87.3 78"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>
-    Drive
-  </div>
-  <button class="op-btn" id="soundBtn" title="Toggle sound" aria-label="Toggle sound">
-    <svg id="soundIcon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05A4.47 4.47 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>
-  </button>
-  <button class="op-btn" id="skipBtn">Skip intro
-    <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-  </button>
-  <div id="opBar"><i></i></div>
+<video id="v" autoplay playsinline controls preload="auto" muted>
+  <source src="../../The.Sound.of.Music.%20(1965)%20%5B580p%5D.mp4" type="video/mp4">
+  <source src="video.mp4" type="video/mp4">
+</video>
+
+<div id="fallback">
+  <b>Video not available here</b>
+  <span>Open this page on the computer where the video file lives,<br>
+        or start it with a hosted URL:</span>
+  <code>index.html?v=https://example.com/your-video.mp4</code>
 </div>
 
-<!-- ============ TOP BAR ============ -->
-<header id="top">
-  <button class="ibtn" id="menuBtn" title="Main menu"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></button>
-  <a id="logo" href="#" title="Drive">
-    <svg viewBox="0 0 87.3 78"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>
-  </a>
-  <div class="search">
-    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/></svg>
-    <input id="q" type="text" placeholder="Search in Drive" autocomplete="off" spellcheck="false">
-    <button class="ibtn" id="clearBtn" title="Clear search"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
-    <button class="ibtn" id="micBtn" title="Search by voice"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></button>
-  </div>
-  <div class="tb-right">
-    <button class="ibtn" id="helpBtn" title="Help"><svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15A10 10 0 1 0 22 12 10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-14a4 4 0 0 0-4 4h2a2 2 0 1 1 4 0c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5a4 4 0 0 0-4-4z"/></svg></button>
-    <button class="ibtn" id="setBtn" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.14 12.94a7.07 7.07 0 0 0 0-1.88l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.49.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.07.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 15.6 12 3.6 3.6 0 0 1 12 15.6z"/></svg></button>
-    <button class="ibtn" id="appsBtn" title="Google apps"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="12" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
-    <button id="avatarBtn" title="Google Account"><span class="avatar">S</span></button>
-  </div>
-</header>
-
-<!-- ============ SIDEBAR ============ -->
-<nav id="side">
-  <button id="newBtn">
-    <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></svg>
-    New
-  </button>
-  <div class="nav" id="navList">
-    <button class="nav-item active" data-view="drive">
-      <svg viewBox="0 0 87.3 78"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>
-      My Drive
-    </button>
-    <button class="nav-item" data-view="shared">
-      <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 3-1.34 3-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-      Shared with me
-    </button>
-    <button class="nav-item" data-view="recent">
-      <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 2.05 4.95l-1.42 1.42A9 9 0 1 0 13 3zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-      Recent
-    </button>
-    <button class="nav-item" data-view="starred">
-      <svg viewBox="0 0 24 24"><path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z"/></svg>
-      Starred
-    </button>
-    <button class="nav-item" data-view="trash">
-      <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-      Trash
-    </button>
-  </div>
-  <div class="storage">
-    <h4>Storage</h4>
-    <p>4.1 GB of 15 GB used</p>
-    <div class="bar"><i></i></div>
-    <a href="#" data-demo="Get more storage">Get more storage</a>
-  </div>
-</nav>
-<div id="drawerOv"></div>
-
-<!-- ============ MAIN ============ -->
-<main id="main">
-  <div class="main-head">
-    <button class="view-title" id="viewTitle">My Drive
-      <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
-    </button>
-    <div class="head-actions">
-      <button class="ibtn" id="btnList" title="List view"><svg viewBox="0 0 24 24"><path d="M3 14h4v-4H3v4zm0 5h4v-4H3v4zM3 9h4V5H3v4zm5 5h13v-4H8v4zm0 5h13v-4H8v4zM8 5v4h13V5H8z"/></svg></button>
-      <button class="ibtn on" id="btnGrid" title="Grid view"><svg viewBox="0 0 24 24"><path d="M4 4h4v4H4V4zm6 0h4v4h-4V4zm6 0h4v4h-4V4zM4 10h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4zM4 16h4v4H4v-4zm6 0h4v4h-4v-4zm6 0h4v4h-4v-4z"/></svg></button>
-      <button class="ibtn" id="btnInfo" title="View details"><svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15A10 10 0 1 0 22 12 10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-14a4 4 0 0 0-4 4h2a2 2 0 1 1 4 0c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5a4 4 0 0 0-4-4z"/></svg></button>
-    </div>
-  </div>
-  <div id="sugWrap" hidden>
-    <div class="sec-label">Suggested</div>
-    <div class="sug-row" id="sugRow"></div>
-  </div>
-  <div id="content"></div>
-</main>
-
-<!-- ============ DETAILS PANE ============ -->
-<aside id="details">
-  <h3>Details <button class="dt-close" id="dtClose" title="Close"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></h3>
-  <div id="dtBody"></div>
-</aside>
-
-<!-- ============ PREVIEW MODAL ============ -->
-<div id="modal">
-  <div class="sheet">
-    <div class="sheet-bar">
-      <span class="nm" id="mdName">File</span>
-      <button class="ibtn" id="mdClose" title="Close"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
-    </div>
-    <div class="pv-big" id="mdPv"></div>
-  </div>
-</div>
-
-<!-- ============ MENUS ============ -->
-<div class="menu" id="newMenu">
-  <button class="mi" data-demo="New folder"><svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>New folder</button>
-  <div class="sep"></div>
-  <button class="mi" data-demo="File upload"><svg viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>File upload</button>
-  <button class="mi" data-demo="Folder upload"><svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7 10v-4h-2v4H7l5 4 5-4h-2z" fill-rule="evenodd"/></svg>Folder upload</button>
-  <div class="sep"></div>
-  <button class="mi" data-demo="Google Docs"><svg viewBox="0 0 24 24"><path d="M6 2h7.5L19 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#1a73e8"/><path d="M13.5 2v4.5a1 1 0 0 0 1 1H19z" fill="#0b57d0"/><path d="M7.5 12h9v1.6h-9zm0 3.2h9V17h-9z" fill="#fff"/></svg>Google Docs</button>
-  <button class="mi" data-demo="Google Sheets"><svg viewBox="0 0 24 24"><path d="M6 2h7.5L19 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#0f9d58"/><path d="M13.5 2v4.5a1 1 0 0 0 1 1H19z" fill="#0a7c40"/><path d="M7.5 11.5h9V13h-9zm0 3h9v1.5h-9zM11 11.5h1.5v6H11z" fill="#fff"/></svg>Google Sheets</button>
-  <button class="mi" data-demo="Google Slides"><svg viewBox="0 0 24 24"><path d="M6 2h7.5L19 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#f9ab00"/><path d="M13.5 2v4.5a1 1 0 0 0 1 1H19z" fill="#e37400"/><path d="M7.5 11.5h9v6h-9z" fill="none" stroke="#fff" stroke-width="1.6"/></svg>Google Slides</button>
-  <div class="sep"></div>
-  <button class="mi" data-demo="More"><svg viewBox="0 0 24 24"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>More</button>
-</div>
-
-<div class="menu" id="setMenu">
-  <button class="mi" data-demo="Settings"><svg viewBox="0 0 24 24"><path d="M19.14 12.94a7.07 7.07 0 0 0 0-1.88l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.49.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.07.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 15.6 12 3.6 3.6 0 0 1 12 15.6z"/></svg>Settings</button>
-  <button class="mi" data-demo="Get Drive for desktop"><svg viewBox="0 0 24 24"><path d="M20 18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg>Get Drive for desktop</button>
-  <button class="mi" data-demo="Help"><svg viewBox="0 0 24 24"><path d="M11 17h2v-6h-2v6zm1-15A10 10 0 1 0 22 12 10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-14a4 4 0 0 0-4 4h2a2 2 0 1 1 4 0c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5a4 4 0 0 0-4-4z"/></svg>Help</button>
-</div>
-
-<div class="menu" id="avatarMenu">
-  <div class="mtitle" style="display:flex;gap:14px;align-items:center;padding:10px 20px 14px">
-    <span class="avatar" style="width:44px;height:44px;font-size:20px">S</span>
-    <span><b style="display:block;font-size:15px;color:#1f1f1f;font-weight:500">Shineil Mathias</b><span style="font-size:13px">shineministry@gmail.com</span></span>
-  </div>
-  <div class="sep"></div>
-  <button class="mi" data-demo="Google Account"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Manage your Google Account</button>
-  <button class="mi" data-demo="Add another account"><svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Add another account</button>
-  <button class="mi" data-demo="Sign out"><svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>Sign out</button>
-</div>
-
-<div class="menu" id="ctxMenu"></div>
-
-<div id="snack"></div>
+<button id="sound" title="Turn on sound">
+  <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05A4.47 4.47 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>
+  Tap for sound
+</button>
 
 <script>
-/* ==================================================================
-   Drive-style UI demo with a video opener
-   Opener source priority:
-     1. ?video=<url>            (any hosted MP4)
-     2. opener.local.mp4         (drop your own file next to index.html)
-     3. assets/opener.mp4        (bundled sample, plays online & offline)
-   ================================================================== */
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const v=document.getElementById('v'),
+      fb=document.getElementById('fallback'),
+      pill=document.getElementById('sound');
 
-/* ---------------- opener ---------------- */
-const op=$("#opener"), ov=$("#openerVideo"), opBar=$("#opBar i");
-const params=new URLSearchParams(location.search);
-let opDone=false;
-function endOpener(){ if(opDone) return; opDone=true; try{ov.pause()}catch(e){}; op.classList.add("hide"); setTimeout(()=>op.classList.add("gone"),600); }
-if(params.has("nointro")){ op.classList.add("gone"); opDone=true; }
-else{
-  const custom=params.get("video");
-  if(custom){ ov.innerHTML=""; ov.src=custom; }
-  ov.addEventListener("ended",endOpener);
-  ov.addEventListener("error",endOpener); // all sources failed -> show the app
-  ov.addEventListener("loadeddata",()=>{ ov.play().catch(()=>{}); });
-  setTimeout(()=>{ if(!opDone && ov.readyState===0) endOpener(); },8000);
-  ov.addEventListener("timeupdate",()=>{ if(ov.duration) opBar.style.width=(ov.currentTime/ov.duration*100)+"%"; });
-}
-$("#skipBtn").addEventListener("click",endOpener);
-$("#soundBtn").addEventListener("click",()=>{
-  ov.muted=!ov.muted;
-  $("#soundIcon").innerHTML=ov.muted
-    ?'<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05A4.47 4.47 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/>'
-    :'<path d="M3 9v6h4l5 5V4L7 9H3zm11 .55v6.9a4.5 4.5 0 0 0 0-6.9zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>';
-  if(!ov.muted) ov.play().catch(()=>{});
-});
+/* 1) ?v=<url> overrides the built-in local paths (used for online hosting) */
+const q=new URLSearchParams(location.search).get('v');
+if(q){ v.innerHTML=''; v.src=q; }
 
-/* ---------------- icons ---------------- */
-const ICONS={
- folder:'<path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>',
- star:'<path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>',
- more:'<path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>',
- open:'<path d="M10 6H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2v-4h-2v4H6V8h4V6zm8-2h-4v2h4v4h2V6c0-1.1-.9-2-2-2z"/>',
- share:'<path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>',
- link:'<path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>',
- rename:'<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>',
- copy:'<path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>',
- move:'<path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>',
- download:'<path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>',
- trash:'<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>',
- restore:'<path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 2.05 4.95l-1.42 1.42A9 9 0 1 0 13 3z"/>',
- info:'<path d="M11 17h2v-6h-2v6zm1-15A10 10 0 1 0 22 12 10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-14a4 4 0 0 0-4 4h2a2 2 0 1 1 4 0c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5a4 4 0 0 0-4-4z"/>',
- play:'<path d="M8 5v14l11-7z"/>'
-};
-function page(color,inner,fold){
-  return '<svg class="big" viewBox="0 0 24 24">'+
-    '<path d="M6 2h7.5L19 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#fff" stroke="'+color+'" stroke-width="1.6"/>'+
-    '<path d="M13.5 2v5.5H19z" fill="'+(fold||color)+'"/>'+
-    (inner||'')+'</svg>';
-}
-const TYPE={
-  folder:{icon:'<svg class="big" viewBox="0 0 24 24" fill="#9aa0a6">'+ICONS.folder+'</svg>',color:'#9aa0a6'},
-  doc:{icon:page('#1a73e8','<path d="M7.5 12h9v1.6h-9zm0 3.2h9V17h-9z" fill="#1a73e8"/>'),color:'#1a73e8',label:'Google Docs'},
-  sheet:{icon:page('#0f9d58','<path d="M7.5 11.5h9V13h-9zm0 3h9V16h-9zM11 11.5h1.5v6H11z" fill="#0f9d58"/>'),color:'#0f9d58',label:'Google Sheets'},
-  slide:{icon:page('#f9ab00','<path d="M7.5 11.5h9v6h-9z" fill="none" stroke="#f9ab00" stroke-width="1.6"/>'),color:'#f9ab00',label:'Google Slides'},
-  pdf:{icon:page('#ea4335','<text x="12" y="18" text-anchor="middle" font-size="5.4" font-weight="700" font-family="Arial" fill="#ea4335">PDF</text>'),color:'#ea4335',label:'PDF document'},
-  zip:{icon:page('#5f6368','<text x="12" y="18" text-anchor="middle" font-size="5.4" font-weight="700" font-family="Arial" fill="#5f6368">ZIP</text>'),color:'#5f6368',label:'Zip archive'},
-  text:{icon:page('#5f6368','<path d="M7.5 11.5h9v1.5h-9zm0 3h9v1.5h-9zm0 3h6v1.5h-6z" fill="#5f6368"/>'),color:'#5f6368',label:'Text file'},
-  audio:{icon:page('#f29900','<path d="M12.5 11v6.1a2.2 2.2 0 1 0 1.6 2.1V13.4l3.4-.9V9.5l-5 1.3z" fill="#f29900"/>'),color:'#f29900',label:'Audio file'},
-  video:{icon:page('#ea4335','<path d="M9.4 11.2l5.4 3.1-5.4 3.1z" fill="#ea4335"/>'),color:'#ea4335',label:'Video file'},
-  image:{icon:'<svg class="big" viewBox="0 0 24 24" fill="#34a853"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>',color:'#34a853',label:'Image'}
-};
-function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+/* instant playback: muted autoplay always allowed -> video shows immediately */
+v.play().catch(()=>{ document.addEventListener('pointerdown',()=>v.play().catch(()=>{}),{once:true}); });
 
-/* ---------------- data ---------------- */
-const G1='linear-gradient(135deg,#89f7fe,#66a6ff)', G2='linear-gradient(160deg,#f6d365,#fda085)',
-      G3='linear-gradient(135deg,#3f3d56,#14131f)', G4='linear-gradient(135deg,#5f2c82,#49a09d)',
-      G5='linear-gradient(135deg,#ff758c,#ff7eb3)', G6='linear-gradient(140deg,#43cea2,#185a9d)';
-const FILES=[
- {n:'Projects',t:'folder',o:'me',m:'Oct 21, 2026',d:20261021,s:''},
- {n:'Media',t:'folder',o:'me',m:'Oct 18, 2026',d:20261018,s:''},
- {n:'Tax Documents 2026',t:'folder',o:'me',m:'Oct 2, 2026',d:20261002,s:''},
- {n:'Website Mockups',t:'folder',o:'Priya Sharma',m:'Oct 16, 2026',d:20261016,s:'',shared:1},
- {n:'Q4 Marketing Plan',t:'doc',o:'me',m:'Oct 27, 2026',d:20261027,s:'',star:1,sug:'You · Edited 2 hours ago'},
- {n:'Revenue Forecast',t:'sheet',o:'me',m:'Oct 26, 2026',d:20261026,s:'',star:1,sug:'You · Edited yesterday'},
- {n:'Annual Report.pdf',t:'pdf',o:'me',m:'Oct 12, 2026',d:20261012,s:'4.7 MB',star:1,sug:'You · Viewed Oct 12'},
- {n:'Product Demo.mp4',t:'video',o:'me',m:'Oct 9, 2026',d:20261009,s:'128 MB',g:G3,dur:'4:31',sug:'You · Viewed Oct 10'},
- {n:'Product Launch',t:'slide',o:'me',m:'Oct 25, 2026',d:20261025,s:''},
- {n:'Team Offsite Notes',t:'doc',o:'Ava Rodriguez',m:'Oct 24, 2026',d:20261024,s:'',shared:1},
- {n:'Budget 2026',t:'sheet',o:'me',m:'Oct 20, 2026',d:20261020,s:''},
- {n:'Conference Keynote',t:'slide',o:'me',m:'Oct 15, 2026',d:20261015,s:''},
- {n:'IMG_4821.jpg',t:'image',o:'me',m:'Oct 19, 2026',d:20261019,s:'3.2 MB',g:G1},
- {n:'Sunset over the bay.png',t:'image',o:'me',m:'Oct 11, 2026',d:20261011,s:'5.8 MB',g:G2},
- {n:'Brand shoot selects.jpg',t:'image',o:'me',m:'Oct 8, 2026',d:20261008,s:'7.1 MB',g:G6},
- {n:'Demo Reel.mp4',t:'video',o:'me',m:'Oct 5, 2026',d:20261005,s:'246 MB',g:G4,dur:'2:08'},
- {n:'Music mix v3.mp3',t:'audio',o:'me',m:'Oct 6, 2026',d:20261006,s:'8.4 MB'},
- {n:'assets-backup.zip',t:'zip',o:'me',m:'Oct 3, 2026',d:20261003,s:'62 MB'},
- {n:'meeting-notes.txt',t:'text',o:'me',m:'Oct 1, 2026',d:20261001,s:'12 KB'},
- {n:'Brand Guidelines.pdf',t:'pdf',o:'Priya Sharma',m:'Oct 23, 2026',d:20261023,s:'12.4 MB',shared:1,star:1},
- {n:'Sprint Board',t:'sheet',o:'Marcus Lee',m:'Oct 22, 2026',d:20261022,s:'',shared:1},
- {n:'Onboarding Checklist',t:'doc',o:'Ava Rodriguez',m:'Oct 17, 2026',d:20261017,s:'',shared:1},
- {n:'Old Resume.docx',t:'doc',o:'me',m:'Sep 12, 2026',d:20260912,s:'86 KB',trash:1},
- {n:'draft-v1.pptx',t:'slide',o:'me',m:'Aug 30, 2026',d:20260830,s:'14 MB',trash:1},
- {n:'temp-screenshot.png',t:'image',o:'me',m:'Aug 22, 2026',d:20260822,s:'1.1 MB',trash:1,g:G5}
-];
-const TITLES={drive:'My Drive',shared:'Shared with me',recent:'Recent',starred:'Starred',trash:'Trash'};
-let view='grid', section='drive', query='', sortAsc=false, sel=null;
+/* first tap anywhere turns the sound on (autoplay policy keeps it muted until then) */
+let sound=false;
+function unmute(){ if(sound) return; sound=true; v.muted=false; v.play().catch(()=>{}); pill.classList.add('gone'); }
+pill.addEventListener('click',e=>{e.stopPropagation();unmute();});
+document.addEventListener('pointerdown',unmute);
 
-/* ---------------- rendering ---------------- */
-function currentList(){
-  let f=FILES.filter(x=>{
-    if(section==='trash') return x.trash;
-    if(x.trash) return false;
-    if(section==='shared') return x.shared;
-    if(section==='starred') return x.star;
-    return true;
-  });
-  if(query) f=f.filter(x=>x.n.toLowerCase().includes(query));
-  if(section==='recent') f=[...f].sort((a,b)=>b.d-a.d);
-  else f=[...f].sort((a,b)=> sortAsc ? b.n.localeCompare(a.n) : a.n.localeCompare(b.n));
-  return f;
-}
-function mini(f){
-  if(f.t==='video') return '<span class="thumbmini" style="background:'+(f.g||G1)+'"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>';
-  if(f.t==='image') return '<span class="thumbmini" style="background:'+(f.g||G1)+'"><svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></span>';
-  const c=TYPE[f.t]; return c.icon.replace('class="big"','style="width:24px;height:24px"');
-}
-function nameCell(f){
-  return '<span class="c-name">'+mini(f)+
-    '<span class="fname">'+esc(f.n)+'</span>'+
-    (f.star?'<svg class="star" viewBox="0 0 24 24">'+ICONS.star+'</svg>':'')+'</span>';
-}
-function render(){
-  const list=currentList();
-  $("#viewTitle").childNodes[0].nodeValue=TITLES[section]+(query?'':'');
-  $("#btnGrid").classList.toggle('on',view==='grid');
-  $("#btnList").classList.toggle('on',view==='list');
-  $("#sugWrap").hidden=!(section==='drive'&&!query);
-  if(section==='drive'&&!query) renderSug();
-  const el=$("#content");
-  if(!list.length){ el.innerHTML='<div class="empty"><svg viewBox="0 0 24 24">'+(section==='trash'?ICONS.trash:ICONS.folder)+'</svg>'+(query?'No results for “'+esc(query)+'”':(section==='trash'?'Trash is empty':'Nothing here'))+'</div>'; return; }
-  if(view==='list'){
-    el.innerHTML='<div class="list"><div class="lrow lhead"><span class="c-name" id="sortName">Name <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></span><span class="c-owner">Owner</span><span class="c-mod">Modified</span><span class="c-size">File size</span><span></span></div>'+
-      list.map((f,i)=>'<div class="lrow'+(sel===i?' sel':'')+'" data-i="'+i+'">'+nameCell(f)+
-      '<span class="c-owner">'+(f.o==='me'?'me':esc(f.o))+'</span><span class="c-mod">'+f.m+'</span><span class="c-size">'+(f.s||'—')+'</span>'+
-      '<span class="c-act"><button class="ibtn" data-more="'+i+'"><svg viewBox="0 0 24 24">'+ICONS.more+'</svg></button></span></div>').join('')+'</div>';
-  }else{
-    el.innerHTML='<div class="grid">'+list.map((f,i)=>{
-      const c=TYPE[f.t];
-      const pv=(f.g)?'<div class="gthumb" style="background:'+f.g+'">'+
-          (f.t==='video'?'<span class="play"><svg viewBox="0 0 24 24">'+ICONS.play+'</svg></span><span class="dur">'+f.dur+'</span>':'<span class="play"><svg viewBox="0 0 24 24" style="width:38px;height:38px"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></span>')+
-        '</div>'
-        :'<div class="gthumb">'+c.icon+'</div>';
-      return '<div class="gcard'+(sel===i?' sel':'')+'" data-i="'+i+'">'+pv+
-        '<div class="gname"><span style="overflow:hidden;text-overflow:ellipsis">'+esc(f.n)+'</span>'+(f.star?'<svg class="star" viewBox="0 0 24 24">'+ICONS.star+'</svg>':'')+'</div>'+
-        '<div class="gmeta">'+(f.o==='me'?'me':esc(f.o))+' · '+f.m+'</div></div>';
-    }).join('')+'</div>';
-  }
-}
-function renderSug(){
-  const s=FILES.filter(f=>f.sug&&!f.trash);
-  $("#sugRow").innerHTML=s.map((f,i)=>{
-    const c=TYPE[f.t];
-    const pv=f.g?'<div class="pv" style="background:'+f.g+'">'+(f.t==='video'?'<span class="play"><svg viewBox="0 0 24 24">'+ICONS.play+'</svg></span><span class="dur">'+f.dur+'</span>':'')+'</div>'
-      :'<div class="pv">'+c.icon+'</div>';
-    return '<div class="sug" data-name="'+esc(f.n)+'">'+pv+'<div class="nm">'+esc(f.n)+'</div><div class="mt">'+esc(f.sug)+'</div></div>';
-  }).join('');
-}
-function fileByName(n){ return FILES.find(f=>f.n===n); }
+/* if no source could be loaded at all -> show the notice instead of a dead player */
+v.addEventListener('error',show);
+function show(){ v.style.display='none'; pill.style.display='none'; fb.style.display='flex'; }
 
-/* ---------------- interactions ---------------- */
-function snack(msg){ const s=$("#snack"); s.textContent=msg; s.classList.add("on"); clearTimeout(s._t); s._t=setTimeout(()=>s.classList.remove("on"),2600); }
-function hideMenus(){ $$(".menu").forEach(m=>m.classList.remove("on")); }
-function showMenu(id,anchor,align){
-  hideMenus(); const m=$("#"+id); m.classList.add("on");
-  const r=anchor.getBoundingClientRect(), mw=m.offsetWidth, mh=m.offsetHeight;
-  let x=align==='right'?r.right-mw:r.left, y=r.bottom+6;
-  if(y+mh>innerHeight-8) y=Math.max(8,r.top-mh-6);
-  m.style.left=Math.max(8,Math.min(x,innerWidth-mw-8))+'px'; m.style.top=y+'px';
-}
-function openDetails(f){
-  const d=$("#details");
-  if(!f){ $("#dtBody").innerHTML='<div class="dl"><div class="row"><span class="k">Storage</span><span class="v">4.1 GB of 15 GB used</span></div><div class="row"><span class="k">Tip</span><span class="v">Select a file to see its details.</span></div></div>'; d.classList.add("on"); return; }
-  const c=TYPE[f.t];
-  const hero=f.g?'<div class="dt-hero" style="background:'+f.g+'"></div>':'<div class="dt-hero">'+c.icon+'</div>';
-  $("#dtBody").innerHTML=hero+'<div class="dl">'+
-    '<div class="row"><span class="k">Type</span><span class="v">'+(c.label||'Folder')+'</span></div>'+
-    '<div class="row"><span class="k">Owner</span><span class="v">'+(f.o==='me'?'me':esc(f.o))+'</span></div>'+
-    '<div class="row"><span class="k">Modified</span><span class="v">'+f.m+'</span></div>'+
-    '<div class="row"><span class="k">Size</span><span class="v">'+(f.s||'—')+'</span></div>'+
-    '<div class="row"><span class="k">Location</span><span class="v">My Drive'+(f.shared?' · Shared with me':'')+'</span></div>'+
-    '</div>';
-  d.classList.add("on");
-}
-function openPreview(f){
-  const c=TYPE[f.t];
-  $("#mdName").textContent=f.n;
-  const body=f.g?'<div style="width:100%;height:380px;border-radius:8px;background:'+f.g+';display:flex;align-items:center;justify-content:center">'+(f.t==='video'?'<svg viewBox="0 0 24 24" style="width:90px;height:90px;fill:rgba(255,255,255,.92);filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))">'+ICONS.play+'</svg>':'')+'</div>'
-    :c.icon+'<div class="hint">'+(c.label||'Folder')+' · '+(f.s||'—')+'</div>';
-  $("#mdPv").innerHTML=body;
-  $("#modal").classList.add("on");
-}
-function ctxItems(f){
-  if(section==='trash') return [['Restore',ICONS.restore],['Permanently delete',ICONS.trash]];
-  return [['Open with',ICONS.open],['Share',ICONS.share],['Get link',ICONS.link],['-',null],['Rename',ICONS.rename],['Make a copy',ICONS.copy],['Move to',ICONS.move],['Download',ICONS.download],['-',null],['Move to trash',ICONS.trash]];
-}
-function bindList(){
-  $$("#content [data-i]").forEach(row=>{
-    row.addEventListener('click',e=>{
-      if(e.target.closest('[data-more]')) return;
-      sel=+row.dataset.i; render();
-      if($("#details").classList.contains("on")) openDetails(currentList()[sel]);
-    });
-    row.addEventListener('dblclick',()=>{
-      const f=currentList()[+row.dataset.i];
-      if(f.t==='folder') snack('Opening “'+f.n+'”'); else openPreview(f);
-    });
-    row.addEventListener('contextmenu',e=>{
-      e.preventDefault(); sel=+row.dataset.i; render();
-      const f=currentList()[sel], m=$("#ctxMenu");
-      m.innerHTML=ctxItems(f).map(it=>it[1]?'<button class="mi" data-demo="'+it[0]+'"><svg viewBox="0 0 24 24">'+it[1]+'</svg>'+it[0]+'</button>':'<div class="sep"></div>').join('');
-      hideMenus(); m.classList.add('on');
-      m.style.left=Math.min(e.clientX,innerWidth-m.offsetWidth-8)+'px';
-      m.style.top=Math.min(e.clientY,innerHeight-m.offsetHeight-8)+'px';
-    });
-    const more=row.querySelector('[data-more]');
-    if(more) more.addEventListener('click',e=>{
-      e.stopPropagation(); sel=+row.dataset.i; render();
-      const f=currentList()[sel], m=$("#ctxMenu");
-      m.innerHTML=ctxItems(f).map(it=>it[1]?'<button class="mi" data-demo="'+it[0]+'"><svg viewBox="0 0 24 24">'+it[1]+'</svg>'+it[0]+'</button>':'<div class="sep"></div>').join('');
-      showMenu('ctxMenu',more,'right');
-    });
-  });
-  $$("#content .sug, #content .gcard").forEach(()=>{});
-}
-// rebind after each render
-const _render=render;
-render=function(){ _render(); bindList();
-  $$("#sugRow .sug").forEach(s=>{ if(s.dataset.bound) return; s.dataset.bound=1;
-    s.addEventListener('click',()=>openPreview(fileByName(s.dataset.name))); });
-  const sn=$("#sortName"); if(sn) sn.addEventListener('click',()=>{sortAsc=!sortAsc;render();});
-};
-
-/* nav */
-$$(".nav-item").forEach(b=>b.addEventListener('click',()=>{
-  $$(".nav-item").forEach(x=>x.classList.remove('active'));
-  b.classList.add('active'); section=b.dataset.view; sel=null; query=""; $("#q").value=""; $("#clearBtn").classList.remove('on');
-  render(); $("#details").classList.remove('on'); closeDrawer();
-}));
-/* view toggle */
-$("#btnGrid").addEventListener('click',()=>{view='grid';render()});
-$("#btnList").addEventListener('click',()=>{view='list';render()});
-$("#btnInfo").addEventListener('click',()=>{ const d=$("#details"); if(d.classList.contains('on')) d.classList.remove('on'); else openDetails(sel!==null?currentList()[sel]:null); });
-$("#dtClose").addEventListener('click',()=>$("#details").classList.remove('on'));
-/* search */
-$("#q").addEventListener('input',e=>{ query=e.target.value.trim().toLowerCase(); $("#clearBtn").classList.toggle('on',!!query); sel=null; render(); });
-$("#clearBtn").addEventListener('click',()=>{ $("#q").value=""; query=""; $("#clearBtn").classList.remove('on'); render(); $("#q").focus(); });
-$("#micBtn").addEventListener('click',()=>snack('Voice search is not available in this demo'));
-/* menus */
-$("#newBtn").addEventListener('click',e=>{e.stopPropagation();showMenu('newMenu',$("#newBtn"))});
-$("#setBtn").addEventListener('click',e=>{e.stopPropagation();showMenu('setMenu',$("#setBtn"),'right')});
-$("#avatarBtn").addEventListener('click',e=>{e.stopPropagation();showMenu('avatarMenu',$("#avatarBtn"),'right')});
-$("#helpBtn").addEventListener('click',()=>snack('Help is not available in this demo'));
-$("#appsBtn").addEventListener('click',()=>snack('Google apps'));
-$("#viewTitle").addEventListener('click',()=>snack('Section switcher'));
-document.addEventListener('click',e=>{ if(!e.target.closest('.menu')) hideMenus(); });
-document.addEventListener('contextmenu',e=>{ if(!e.target.closest('[data-i]')&&!e.target.closest('.menu')) hideMenus(); });
-document.addEventListener('click',e=>{
-  const d=e.target.closest('[data-demo]'); if(d){ snack(d.dataset.demo+': demo only'); hideMenus(); }
-});
-/* modal */
-$("#mdClose").addEventListener('click',()=>$("#modal").classList.remove('on'));
-$("#modal").addEventListener('click',e=>{ if(e.target.id==='modal') $("#modal").classList.remove('on'); });
+/* space = play/pause */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){
-    if($("#modal").classList.contains('on')) $("#modal").classList.remove('on');
-    else if($$(".menu.on").length) hideMenus();
-    else if(!opDone) endOpener();
-  }
+  if(e.code==='Space' && fb.style.display!=='flex'){ e.preventDefault(); v.paused?v.play().catch(()=>{}):v.pause(); }
 });
-/* mobile drawer */
-function closeDrawer(){ $("#side").classList.remove('open'); $("#drawerOv").classList.remove('on'); }
-$("#menuBtn").addEventListener('click',()=>{
-  if(innerWidth>960){ snack('Main menu'); return; }
-  $("#side").classList.toggle('open'); $("#drawerOv").classList.toggle('on');
-});
-$("#drawerOv").addEventListener('click',closeDrawer);
-/* logo click resets */
-$("#logo").addEventListener('click',e=>{e.preventDefault();section='drive';query="";$("#q").value="";$$(".nav-item").forEach(x=>x.classList.toggle('active',x.dataset.view==='drive'));render()});
-
-render();
 </script>
 </body>
 </html>

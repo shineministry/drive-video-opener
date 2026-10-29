@@ -1,5 +1,5 @@
-# Never commit a personal/local opener video
-opener.local.mp4
+# Never commit video files (repo size + copyright)
+*.mp4
 
 # OS junk
 .DS_Store
