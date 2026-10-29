@@ -1,0 +1,6 @@
+# Never commit a personal/local opener video
+opener.local.mp4
+
+# OS junk
+.DS_Store
+Thumbs.db
