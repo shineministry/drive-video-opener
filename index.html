@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Video</title>
+<title>The Sound of Music (1965)</title>
 <style>
   html,body{height:100%;margin:0;background:#000;overflow:hidden}
   #v{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000;outline:none}
+  video::cue{background:rgba(0,0,0,.72);color:#fff;font-size:1.05em;text-shadow:0 1px 2px #000}
   #fallback{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
     gap:12px;padding:24px;text-align:center;background:#000;color:#9aa0a6;
     font:15px/1.6 "Segoe UI",Roboto,Arial,sans-serif}
@@ -22,9 +23,11 @@
 </head>
 <body>
 
-<video id="v" autoplay playsinline controls preload="auto" muted>
+<video id="v" autoplay playsinline controls preload="auto">
+  <source src="video_hd.mp4" type="video/mp4">
   <source src="../../The.Sound.of.Music.%20(1965)%20%5B580p%5D.mp4" type="video/mp4">
   <source src="video.mp4" type="video/mp4">
+  <track kind="subtitles" src="subtitles.vtt" srclang="en" label="English" default>
 </video>
 
 <div id="fallback">
@@ -36,54 +39,82 @@
 
 <button id="sound" title="Turn on sound">
   <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05A4.47 4.47 0 0 0 16.5 12zM14 3.23v2.06a7 7 0 0 1 0 13.42v2.06a9 9 0 0 0 0-17.54z"/></svg>
-  Tap for sound
+  <span id="soundtxt">Tap for sound</span>
 </button>
 
 <script>
 const v=document.getElementById('v'),
       fb=document.getElementById('fallback'),
-      pill=document.getElementById('sound');
+      pill=document.getElementById('sound'),
+      pillTxt=document.getElementById('soundtxt');
 
-/* 1) ?v=<url> overrides the built-in local paths (used for online hosting) */
+/* 1) ?v=<url> overrides the built-in local paths (used for online hosting).
+   Setting the src attribute takes precedence over the <source> children, and
+   keeps the <track> element so subtitles still work for hosted videos. */
 const q=new URLSearchParams(location.search).get('v');
-if(q){ v.innerHTML=''; v.src=q; }
+if(q){ v.src=q; }
+
+/* ---- sound: never muted ----
+   The video element never gets muted. Unmuted autoplay is attempted directly;
+   if the browser's autoplay policy blocks it, nothing starts until the first
+   tap (never silently). */
 
 /* ---- 200% audio ----
-   Browsers cap the element's volume at 1.0, so the extra 2x comes from a
-   Web Audio GainNode inserted into the player. Local/page sources are boosted;
-   cross-origin ?v= videos are left untouched (Web Audio would silence those
+   Browsers cap element volume at 1.0, so the extra 2x comes from a Web Audio
+   GainNode. The graph is only attached once the AudioContext is running:
+   attaching to a suspended context would silence the element completely.
+   Cross-origin ?v= videos are left untouched (Web Audio would silence those
    without CORS headers). */
 const BOOST = 2.0;                 // 2.0 = 200% / double volume
-let actx = null, gain = null;
-(function initBoost(){
+const remote = !!(q && /^(https?:)?\/\//i.test(q) && !q.startsWith(location.origin));
+const AC = window.AudioContext || window.webkitAudioContext;
+let actx=null, gain=null, attached=false;
+
+function attachBoost(){
+  if(attached || remote || !actx || actx.state!=='running') return;
   try{
-    if(q && /^(https?:)?\/\//i.test(q) && !q.startsWith(location.origin)) return; // remote -> keep 100%
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if(!AC) return;
-    actx = new AC();
-    const src = actx.createMediaElementSource(v);
-    gain = actx.createGain();
-    gain.gain.value = BOOST;       // the actual 200%
+    const src=actx.createMediaElementSource(v);
+    gain=actx.createGain();
+    gain.gain.value=BOOST;         // the actual 200%
     src.connect(gain); gain.connect(actx.destination);
-    window.__audio = { actx, gain, src, BOOST };
-  }catch(e){ actx = null; gain = null; }
-})();
-
-/* instant playback: muted autoplay always allowed -> video shows immediately */
-v.play().catch(()=>{ document.addEventListener('pointerdown',()=>v.play().catch(()=>{}),{once:true}); });
-
-/* first tap anywhere turns the sound on (autoplay policy keeps it muted until then) */
-let sound=false;
-function unmute(){
-  if(sound) return;
-  sound=true; v.muted=false; v.play().catch(()=>{}); pill.classList.add('gone');
-  if(actx && actx.state!=='running') actx.resume().catch(()=>{});   // boost needs a running context
+    attached=true;
+    window.__audio={actx,gain,src,BOOST};
+  }catch(e){ /* leave native audio untouched */ }
+  syncPill();
 }
-v.addEventListener('volumechange',()=>{                              // unmuting via native controls too
-  if(!v.muted && actx && actx.state!=='running') actx.resume().catch(()=>{});
+function ensureContext(){
+  if(remote || !AC || attached) return;
+  if(!actx){ try{ actx=new AC(); }catch(e){ return; } }
+  if(actx.state==='running'){ attachBoost(); return; }
+  actx.resume().then(attachBoost).catch(()=>{});   // retry on gesture below
+}
+
+/* attempt unmuted autoplay right away (allowed when the browser grants it) */
+v.play().catch(()=>{ /* blocked: video stays paused on its first frame, sound on tap */ });
+ensureContext();                                    // boost starts immediately if permitted
+
+/* first tap anywhere: (re)start playback with sound + attach the boost */
+document.addEventListener('pointerdown',()=>{
+  if(v.paused) v.play().catch(()=>{});
+  ensureContext();
+},{capture:true});
+v.addEventListener('volumechange',()=>{
+  if(!v.muted) ensureContext();
 });
-pill.addEventListener('click',e=>{e.stopPropagation();unmute();});
-document.addEventListener('pointerdown',unmute);
+
+/* pill: shown until playback + boost are both active; hidden for remote ?v= */
+function syncPill(){
+  const ok = remote || (attached && !v.paused);
+  pill.classList.toggle('gone', ok);
+  pillTxt.textContent = v.paused ? 'Tap for sound' : 'Tap for 2\u00d7 volume';
+}
+pill.addEventListener('click',e=>{
+  e.stopPropagation();
+  if(v.paused) v.play().catch(()=>{});
+  ensureContext();
+});
+['play','playing','pause'].forEach(ev=>v.addEventListener(ev,syncPill));
+syncPill();
 
 /* if no source could be loaded at all -> show the notice instead of a dead player */
 v.addEventListener('error',show);

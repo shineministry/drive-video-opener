@@ -1,6 +1,15 @@
 # Never commit video files (repo size + copyright)
 *.mp4
 
+# Local build/dev artifacts (subtitle source, scripts, encode log)
+sub1638/
+sub1638.zip
+cand-*
+ms447.html
+analyze-subs.ps1
+convert-subs.ps1
+encode.log
+
 # OS junk
 .DS_Store
 Thumbs.db
