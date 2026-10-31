@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Sound of Music (1965)</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
   html,body{height:100%;margin:0;background:#000;overflow:hidden}
   #v{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000;outline:none}
@@ -27,7 +28,7 @@
   #crest{position:fixed;top:16px;right:18px;width:min(230px,26vw);height:auto;
     opacity:.5;                      /* 50% transparent watermark */
     pointer-events:none;             /* clicks pass through to the video */
-    z-index:4;filter:drop-shadow(0 1px 4px rgba(0,0,0,.45))}
+    z-index:11;filter:drop-shadow(0 1px 4px rgba(0,0,0,.45))}   /* 11 = also above the landing page */
   #ctrls{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;align-items:center;gap:14px;
     padding:28px 18px 13px;background:linear-gradient(transparent,rgba(0,0,0,.78));
     transition:opacity .3s;opacity:1}
@@ -46,9 +47,103 @@
   #tCur,#tDur{font:500 13px "Segoe UI",Roboto,Arial,sans-serif;color:#fff;text-shadow:0 1px 2px #000;
     font-variant-numeric:tabular-nums;min-width:42px;text-align:center}
   #tDur{color:#cfd2d6}
+
+  /* ---- landing / intro page (Netflix-style) ---- */
+  #intro{position:fixed;inset:0;z-index:10;background:#0a0a0c;display:flex;align-items:flex-end;
+    overflow:hidden}
+  #intro.gone{display:none}
+  #introShots{position:absolute;inset:0}
+  #introShots img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;
+    transition:opacity 1.6s ease;transform:scale(1.04);animation:panZoom 12s ease-in-out infinite alternate}
+  #introShots img.on{opacity:1}
+  @keyframes panZoom{from{transform:scale(1.02)}to{transform:scale(1.12)}}
+  #intro::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(90deg,rgba(6,6,10,.96) 0%,rgba(6,6,10,.86) 34%,rgba(6,6,10,.35) 62%,rgba(6,6,10,.65) 100%),
+               linear-gradient(0deg,rgba(0,0,0,.92) 0%,rgba(0,0,0,.25) 45%,rgba(0,0,0,.55) 100%)}
+  #introCard{position:relative;z-index:2;max-width:min(660px,92vw);
+    padding:clamp(26px,6vh,70px) clamp(22px,6vw,84px) clamp(34px,8vh,84px)}
+  #introTag{display:inline-block;font:700 11px/1 "Segoe UI",Arial,sans-serif;letter-spacing:.34em;
+    color:#e50914;text-transform:uppercase;margin-bottom:16px}
+  #introTitle{margin:0 0 12px;color:#fff;font:800 clamp(34px,6vw,64px)/1.02 "Segoe UI",Arial,sans-serif;
+    letter-spacing:-.5px;text-shadow:0 4px 22px rgba(0,0,0,.7)}
+  #introMeta{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:16px;
+    color:#b9bdc4;font:500 13.5px "Segoe UI",Arial,sans-serif}
+  #introMeta .g{border:1px solid rgba(255,255,255,.42);border-radius:3px;padding:1px 6px;font-size:11.5px;
+    color:#e6e8eb}
+  #introMeta .hr{width:1px;height:13px;background:rgba(255,255,255,.28)}
+  #introMeta .stars{color:#f5c518;letter-spacing:1px}
+  #introDesc{margin:0 0 12px;color:#d7dade;font:400 clamp(14px,1.6vw,16.5px)/1.62 "Segoe UI",Arial,sans-serif}
+  #introCast{margin:0 0 26px;color:#9ea3ab;font:400 13.5px/1.6 "Segoe UI",Arial,sans-serif}
+  #introCast b{color:#cfd3d9;font-weight:600}
+  #introBtns{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  #btnGo{border:0;cursor:pointer;border-radius:5px;padding:14px 34px;background:#e50914;color:#fff;
+    font:700 17px "Segoe UI",Arial,sans-serif;letter-spacing:.06em;
+    box-shadow:0 4px 18px rgba(229,9,20,.4);transition:background .18s,transform .18s}
+  #btnGo:hover{background:#f6121d;transform:translateY(-1px)}
+  #btnTrailer{border:1px solid rgba(255,255,255,.35);cursor:pointer;border-radius:5px;padding:13px 26px;
+    background:rgba(29,29,33,.72);color:#fff;font:600 15px "Segoe UI",Arial,sans-serif;
+    display:inline-flex;align-items:center;gap:9px;transition:background .18s}
+  #btnTrailer:hover{background:rgba(60,60,66,.85)}
+  #btnTrailer svg{width:17px;height:17px;fill:#fff}
+  #introNote{margin-top:18px;color:#7d828a;font:400 12.5px/1.6 "Segoe UI",Arial,sans-serif}
+  /* trailer overlay */
+  #trailerWrap{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.94);display:none;
+    align-items:center;justify-content:center;flex-direction:column;gap:14px}
+  #trailerWrap.on{display:flex}
+  #trv{max-width:min(1100px,94vw);max-height:78vh;width:100%;background:#000;border-radius:6px;
+    box-shadow:0 12px 60px rgba(0,0,0,.8)}
+  #trailerWrap .close{position:absolute;top:18px;right:22px;width:44px;height:44px;border-radius:50%;
+    border:0;cursor:pointer;background:rgba(255,255,255,.12);color:#fff;font-size:24px;line-height:1}
+  #trailerWrap .close:hover{background:rgba(255,255,255,.24)}
+  #trailerWrap .cap{color:#8ab4f8;font:600 12.5px "Segoe UI",Arial,sans-serif;letter-spacing:.22em;
+    text-transform:uppercase}
 </style>
 </head>
 <body>
+
+<!-- ============ landing page (shown before the movie) ============ -->
+<div id="intro">
+  <div id="introShots">
+    <img src="hero1.jpg" alt="" class="on">
+    <img src="hero2.jpg" alt="">
+    <img src="hero3.jpg" alt="">
+    <img src="hero4.jpg" alt="">
+    <img src="hero5.jpg" alt="">
+  </div>
+  <div id="introCard">
+    <span id="introTag">Shineil Mathias presents</span>
+    <h1 id="introTitle">The Sound of Music</h1>
+    <div id="introMeta">
+      <span class="stars">★★★★★</span>
+      <span class="hr"></span>
+      <span>1965</span><span class="hr"></span>
+      <span>2h 55m</span><span class="hr"></span>
+      <span class="g">G</span><span class="g">MUSICAL</span><span class="g">4K</span>
+    </div>
+    <p id="introDesc">
+      Rodgers &amp; Hammerstein’s beloved classic. A high-spirited postulant leaves the convent
+      to become a governess for the seven children of Captain von Trapp — and wins them over
+      with music, mountains and a heart that refuses to be quieted. Songs the whole world knows:
+      <i>Do-Re-Mi</i>, <i>My Favorite Things</i>, <i>Climb Ev’ry Mountain</i>, <i>Edelweiss</i>.
+    </p>
+    <p id="introCast">
+      <b>Julie Andrews</b> · <b>Christopher Plummer</b> · <b>Eleanor Parker</b> · <b>Richard Haydn</b><br>
+      Directed by <b>Robert Wise</b> · Screenplay by <b>Ernest Lehman</b> · Filmed in Todd-AO
+    </p>
+    <div id="introBtns">
+      <button id="btnGo">▶ START</button>
+      <button id="btnTrailer"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> TRAILER</button>
+    </div>
+    <div id="introNote">Never muted · boosted sound · subtitles on · your place is remembered automatically</div>
+  </div>
+</div>
+
+<!-- ============ trailer overlay ============ -->
+<div id="trailerWrap">
+  <button class="close" id="trvClose" title="Close trailer">×</button>
+  <div class="cap">The Sound of Music — Trailer</div>
+  <video id="trv" playsinline controls preload="none"></video>
+</div>
 
 <video id="v" autoplay playsinline preload="auto">
   <source src="video_hd.mp4" type="video/mp4">
@@ -85,6 +180,12 @@ const v=document.getElementById('v'),
       fb=document.getElementById('fallback'),
       pill=document.getElementById('sound'),
       pillTxt=document.getElementById('soundtxt');
+
+/* ---- landing page state (declared early: the key handlers below ask it) ---- */
+let introOpen=true,          // true while the introductory page covers the player
+    trailerOpen=false;
+/* while the landing page is up the movie must NOT play behind it */
+v.addEventListener('play',()=>{ if(introOpen) v.pause(); },{capture:true});
 
 /* 1) ?v=<url> overrides the built-in local paths (used for online hosting).
    Setting the src attribute takes precedence over the <source> children, and
@@ -298,6 +399,9 @@ function show(){ v.style.display='none'; pill.style.display='none'; ctrls.style.
    Runs even in fullscreen. */
 document.addEventListener('keydown',e=>{
   if(e.code!=='Space' || e.repeat) return;
+  if(typeof introOpen!=='undefined' && introOpen) return;   // landing page: let Space press the START button
+  if(trailerOpen){ e.preventDefault(); e.stopPropagation();
+    trv.paused?trv.play().catch(()=>{}):trv.pause(); return; }
   if(fb.style.display==='flex') return;                 // fallback screen: no video
   e.preventDefault();
   e.stopPropagation();
@@ -405,6 +509,97 @@ btnFs.addEventListener('click',()=>{
 
 /* no right-click "Save video as…" on the picture */
 v.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* ---- landing page: slideshow, START/CONTINUE, trailer ---- */
+const intro=document.getElementById('intro'),
+      shots=Array.from(document.querySelectorAll('#introShots img')),
+      btnGo=document.getElementById('btnGo'),
+      btnTrailer=document.getElementById('btnTrailer'),
+      trailerWrap=document.getElementById('trailerWrap'),
+      trv=document.getElementById('trv'),
+      trvClose=document.getElementById('trvClose');
+const TRAILER_URL='https://pub-85706559f57d4bc5b17d1bd3a9567bfb.r2.dev/sound-of-music-trailer.mp4';
+
+/* crossfading hero stills (with a slow Ken-Burns drift set in CSS) */
+let shotI=0;
+setInterval(()=>{
+  if(!introOpen) return;
+  shots[shotI].classList.remove('on');
+  shotI=(shotI+1)%shots.length;
+  shots[shotI].classList.add('on');
+},5200);
+
+/* START vs CONTINUE: same rules the resume system itself uses
+   (> 15 s watched, and not within 45 s of the end = still "in progress") */
+function savedSpot(){
+  const t=readPos();
+  if(t<=MIN_RESUME) return 0;
+  if(isFinite(v.duration) && v.duration>0 && t>=v.duration-NEAR_END) return 0;
+  return t;
+}
+function syncGoBtn(){
+  const t=savedSpot();
+  btnGo.textContent = t ? '▶ CONTINUE  ·  '+fmtTime(t) : '▶ START';
+}
+v.addEventListener('loadedmetadata',syncGoBtn);
+syncGoBtn();
+
+btnGo.addEventListener('click',()=>{
+  introOpen=false;
+  intro.classList.add('gone');
+  ensureContext();
+  v.play().catch(()=>{});
+  showCtrls();
+});
+
+/* ---- trailer: a montage cut from the film, hosted like the movie itself ---- */
+function attachTrailerBoost(){
+  // only on a provably CORS-clean load; otherwise the trailer would go silent
+  if(!actx || actx.state!=='running') return;
+  if(!(trv.crossOrigin==='anonymous' && trv.readyState>=1)) return;
+  if(trv.__boosted) return;
+  try{
+    const src=actx.createMediaElementSource(trv);
+    const g=actx.createGain(); g.gain.value=BOOST;
+    const lim=actx.createDynamicsCompressor();
+    lim.threshold.value=-6; lim.knee.value=4; lim.ratio.value=12;
+    lim.attack.value=0.002; lim.release.value=0.2;
+    src.connect(g); g.connect(lim); lim.connect(actx.destination);
+    trv.__boosted=true;
+  }catch(e){}
+}
+let trvRetried=false;
+trv.addEventListener('error',()=>{
+  if(trv.hasAttribute('crossorigin') && !trvRetried){     // CORS hiccup: plain retry, no boost
+    trvRetried=true;
+    trv.removeAttribute('crossorigin');
+    trv.src=TRAILER_URL;
+    trv.play().catch(()=>{});
+  }
+});
+trv.addEventListener('loadedmetadata',attachTrailerBoost);
+['play','playing'].forEach(ev=>trv.addEventListener(ev,attachTrailerBoost));
+
+btnTrailer.addEventListener('click',e=>{
+  e.stopPropagation();
+  ensureContext();                              // user gesture -> running AudioContext
+  trailerOpen=true;
+  trailerWrap.classList.add('on');
+  if(!trv.src){ trv.crossOrigin='anonymous'; trv.src=TRAILER_URL; }
+  trv.muted=false; trv.volume=1;
+  attachTrailerBoost();
+  trv.play().catch(()=>{});
+});
+function closeTrailer(){
+  trailerOpen=false;
+  trv.pause();
+  trailerWrap.classList.remove('on');
+}
+trvClose.addEventListener('click',e=>{ e.stopPropagation(); closeTrailer(); });
+trailerWrap.addEventListener('click',e=>{ if(e.target===trailerWrap) closeTrailer(); });
+document.addEventListener('keydown',e=>{
+  if(e.code==='Escape' && trailerOpen){ closeTrailer(); }
+},true);
 
 syncCtrls(); showCtrls();
 </script>
