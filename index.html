@@ -91,45 +91,61 @@ const v=document.getElementById('v'),
    keeps the <track> element so subtitles still work for hosted videos. */
 const q=new URLSearchParams(location.search).get('v');
 const isRemote=!!(q && /^(https?:)?\/\//i.test(q) && !q.startsWith(location.origin));
-let corsDropped=false;   // becomes true only after a CORS attempt failed and we retried plain
-if(q){
-  /* Remote videos are fetched CORS-clean ("anonymous") so the media is legally
-     touchable by Web Audio -> the 200% boost works there too. If the server
-     rejects the CORS fetch, the error handler below retries WITHOUT it once
-     (audio then stays at normal 100% — never silenced, never muted). */
-  if(isRemote) v.crossOrigin='anonymous';
-  v.src=q;
+/* Remote load stages:
+   0 = direct fetch, CORS-clean (best — no relay traffic) … needs the bucket's
+       CORS policy to exist; fails fast without it
+   1 = same-origin relay (/proxy?u=…) — the response counts as same-origin, so
+       Web Audio may legally apply the4x boost AND seeking keeps working,
+       with no dashboard/CORS dependency
+   2 = direct plain fetch — last resort: normal volume, never silenced */
+const PROXY='/proxy?u='+encodeURIComponent(q||'');
+let stage=q?(isRemote?0:-1): -1;      // -1 = local/same-origin source, nothing to retry
+function applySrc(){
+  if(!q) return;
+  if(stage===0){ v.crossOrigin='anonymous'; v.src=q; return; }
+  if(stage===1){ v.removeAttribute('crossorigin'); v.src=PROXY; return; }
+  v.removeAttribute('crossorigin'); v.src=q;          // plain direct (stage 2 / same-origin ?v=)
 }
+if(q) applySrc();
 
 /* ---- sound: never muted ----
    The video element never gets muted. Unmuted autoplay is attempted directly;
    if the browser's autoplay policy blocks it, nothing starts until the first
    tap (never silently). */
 
-/* ---- 200% audio ----
-   Browsers cap element volume at 1.0, so the extra 2x comes from a Web Audio
-   GainNode. The graph is only attached once the AudioContext is running
-   (attaching to a suspended context would silence the element) and — for
-   remote videos — only after the media has provably loaded CORS-clean. */
-const BOOST = 2.0;                 // 2.0 = 200% / double volume
+/* ---- boosted audio ----
+   Browsers cap element volume at 1.0, so the extra loudness comes from a Web
+   Audio graph: GainNode at4x + a DynamicsCompressor acting as a limiter, so
+   the4x gain is loud without hard-clipping into distortion. The graph is only
+   attached once the AudioContext is running (attaching to a suspended context
+   would silence the element) and — for direct remote videos — only after the
+   media has provably loaded CORS-clean (stage1 relay responses are
+   same-origin, so they are safe immediately). */
+const BOOST = 4.0;                 // 4.0 = 400% / four times the volume
 const AC = window.AudioContext || window.webkitAudioContext;
 let actx=null, gain=null, attached=false;
 
 function boostAllowed(){
-  if(!q) return true;              // local <source> files
-  if(isRemote) return !corsDropped; // remote: only while the CORS-clean attempt is in effect
-  return true;                      // same-origin ?v=
+  if(stage===2) return false;       // plain cross-origin fallback: boosting it would silence it
+  return true;                      // local files, same-origin, CORS-clean load, relay load
 }
 function attachBoost(){
   if(attached || !boostAllowed() || !actx || actx.state!=='running') return;
-  if(isRemote && !(v.crossOrigin==='anonymous' && v.readyState>=1)) return; // wait for CORS load proof
+  if(stage===0 && isRemote && !(v.crossOrigin==='anonymous' && v.readyState>=1)) return; // wait for CORS load proof
   try{
     const src=actx.createMediaElementSource(v);
     gain=actx.createGain();
-    gain.gain.value=BOOST;         // the actual 200%
-    src.connect(gain); gain.connect(actx.destination);
+    gain.gain.value=BOOST;          // the actual4x
+    // limiter: absorbs the peaks the4x gain would otherwise hard-clip
+    const limiter=actx.createDynamicsCompressor();
+    limiter.threshold.value=-6;
+    limiter.knee.value=4;
+    limiter.ratio.value=12;
+    limiter.attack.value=0.002;
+    limiter.release.value=0.2;
+    src.connect(gain); gain.connect(limiter); limiter.connect(actx.destination);
     attached=true;
-    window.__audio={actx,gain,src,BOOST};
+    window.__audio={actx,gain,limiter,src,BOOST};
   }catch(e){ /* leave native audio untouched */ }
   syncPill();
 }
@@ -158,10 +174,10 @@ v.addEventListener('volumechange',()=>{
 /* pill: shown until playback + boost are both active (or boost can never
    apply, e.g. after a CORS fallback) */
 function syncPill(){
-  const noBoostEver = isRemote && corsDropped;
+  const noBoostEver = stage===2;    // plain fallback: boost can never attach there
   const ok = !v.paused && (attached || noBoostEver);
   pill.classList.toggle('gone', ok);
-  pillTxt.textContent = v.paused ? 'Tap for sound' : 'Tap for 2\u00d7 volume';
+  pillTxt.textContent = v.paused ? 'Tap for sound' : 'Tap for 4\u00d7 volume';
 }
 pill.addEventListener('click',e=>{
   e.stopPropagation();
@@ -251,13 +267,13 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 v.addEventListener('ended',()=>forgetPos());               // finished: start over next time
 
 /* if no source could be loaded at all -> show the notice instead of a dead
-   player; a failed CORS fetch first retries once without crossOrigin */
+   player; a failed stage advances the chain: CORS attempt -> same-origin
+   relay -> plain direct fetch (last resort, normal volume, never silent) */
 let retrying=false;
 function handleMediaError(){
-  if(isRemote && !corsDropped && v.hasAttribute('crossorigin')){
-    corsDropped=true; retrying=true;
-    v.removeAttribute('crossorigin');
-    v.src=q;                      // re-run resource selection, plain no-cors fetch
+  if(isRemote && stage<2){
+    stage++; retrying=true;
+    applySrc();                    // re-run resource selection with the next source
     v.play().catch(()=>{});
     return true;
   }
