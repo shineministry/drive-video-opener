@@ -9,6 +9,8 @@ ms447.html
 analyze-subs.ps1
 convert-subs.ps1
 encode.log
+status.html
+status-watcher.ps1
 
 # OS junk
 .DS_Store

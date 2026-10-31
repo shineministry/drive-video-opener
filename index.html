@@ -19,6 +19,11 @@
   #sound:hover{background:#fff}
   #sound.gone{display:none}
   #sound svg{width:18px;height:18px;fill:currentColor}
+  #toast{position:fixed;left:50%;bottom:8%;transform:translateX(-50%) translateY(10px);
+    background:rgba(32,33,36,.92);color:#e8eaed;padding:11px 20px;border-radius:9px;
+    font:500 14px "Segoe UI",Roboto,Arial,sans-serif;opacity:0;pointer-events:none;
+    transition:opacity .35s,transform .35s;z-index:6;box-shadow:0 1px 8px rgba(0,0,0,.55)}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -52,7 +57,16 @@ const v=document.getElementById('v'),
    Setting the src attribute takes precedence over the <source> children, and
    keeps the <track> element so subtitles still work for hosted videos. */
 const q=new URLSearchParams(location.search).get('v');
-if(q){ v.src=q; }
+const isRemote=!!(q && /^(https?:)?\/\//i.test(q) && !q.startsWith(location.origin));
+let corsDropped=false;   // becomes true only after a CORS attempt failed and we retried plain
+if(q){
+  /* Remote videos are fetched CORS-clean ("anonymous") so the media is legally
+     touchable by Web Audio -> the 200% boost works there too. If the server
+     rejects the CORS fetch, the error handler below retries WITHOUT it once
+     (audio then stays at normal 100% — never silenced, never muted). */
+  if(isRemote) v.crossOrigin='anonymous';
+  v.src=q;
+}
 
 /* ---- sound: never muted ----
    The video element never gets muted. Unmuted autoplay is attempted directly;
@@ -61,17 +75,21 @@ if(q){ v.src=q; }
 
 /* ---- 200% audio ----
    Browsers cap element volume at 1.0, so the extra 2x comes from a Web Audio
-   GainNode. The graph is only attached once the AudioContext is running:
-   attaching to a suspended context would silence the element completely.
-   Cross-origin ?v= videos are left untouched (Web Audio would silence those
-   without CORS headers). */
+   GainNode. The graph is only attached once the AudioContext is running
+   (attaching to a suspended context would silence the element) and — for
+   remote videos — only after the media has provably loaded CORS-clean. */
 const BOOST = 2.0;                 // 2.0 = 200% / double volume
-const remote = !!(q && /^(https?:)?\/\//i.test(q) && !q.startsWith(location.origin));
 const AC = window.AudioContext || window.webkitAudioContext;
 let actx=null, gain=null, attached=false;
 
+function boostAllowed(){
+  if(!q) return true;              // local <source> files
+  if(isRemote) return !corsDropped; // remote: only while the CORS-clean attempt is in effect
+  return true;                      // same-origin ?v=
+}
 function attachBoost(){
-  if(attached || remote || !actx || actx.state!=='running') return;
+  if(attached || !boostAllowed() || !actx || actx.state!=='running') return;
+  if(isRemote && !(v.crossOrigin==='anonymous' && v.readyState>=1)) return; // wait for CORS load proof
   try{
     const src=actx.createMediaElementSource(v);
     gain=actx.createGain();
@@ -83,7 +101,7 @@ function attachBoost(){
   syncPill();
 }
 function ensureContext(){
-  if(remote || !AC || attached) return;
+  if(!boostAllowed() || !AC || attached) return;
   if(!actx){ try{ actx=new AC(); }catch(e){ return; } }
   if(actx.state==='running'){ attachBoost(); return; }
   actx.resume().then(attachBoost).catch(()=>{});   // retry on gesture below
@@ -92,6 +110,7 @@ function ensureContext(){
 /* attempt unmuted autoplay right away (allowed when the browser grants it) */
 v.play().catch(()=>{ /* blocked: video stays paused on its first frame, sound on tap */ });
 ensureContext();                                    // boost starts immediately if permitted
+v.addEventListener('loadedmetadata',attachBoost);   // remote: attach once CORS load is proven
 
 /* first tap anywhere: (re)start playback with sound + attach the boost */
 document.addEventListener('pointerdown',()=>{
@@ -102,9 +121,11 @@ v.addEventListener('volumechange',()=>{
   if(!v.muted) ensureContext();
 });
 
-/* pill: shown until playback + boost are both active; hidden for remote ?v= */
+/* pill: shown until playback + boost are both active (or boost can never
+   apply, e.g. after a CORS fallback) */
 function syncPill(){
-  const ok = remote || (attached && !v.paused);
+  const noBoostEver = isRemote && corsDropped;
+  const ok = !v.paused && (attached || noBoostEver);
   pill.classList.toggle('gone', ok);
   pillTxt.textContent = v.paused ? 'Tap for sound' : 'Tap for 2\u00d7 volume';
 }
@@ -116,11 +137,105 @@ pill.addEventListener('click',e=>{
 ['play','playing','pause'].forEach(ev=>v.addEventListener(ev,syncPill));
 syncPill();
 
-/* if no source could be loaded at all -> show the notice instead of a dead player */
-v.addEventListener('error',show);
+/* ---- continue system: remember where the viewer stopped, resume there ----
+   Position is stored in localStorage keyed by the video source, so the movie
+   picks up where the user left off in a past session (per browser/device).
+   It saves periodically while playing + on pause/unload, and forgets the
+   position once the movie is finished (or nearly: last 45 s = "done"). */
+const RESUME_KEY='tsom-pos-v1';
+const MIN_RESUME=15;        // ignore the first seconds (accidental closes)
+const NEAR_END=45;          // < this much left = treat as finished
+function srcKey(){ return v.currentSrc || q || 'default'; }
+function readPos(){
+  try{
+    const all=JSON.parse(localStorage.getItem(RESUME_KEY)||'{}');
+    const e=all[srcKey()];
+    return (e && typeof e.t==='number' && isFinite(e.t)) ? e.t : 0;
+  }catch(e){ return 0; }
+}
+function writePos(t){
+  try{
+    const all=JSON.parse(localStorage.getItem(RESUME_KEY)||'{}');
+    all[srcKey()]={t:t,at:Date.now()};
+    // keep storage small: drop entries older than 6 months
+    for(const k in all){ if(Date.now()-(all[k].at||0)>15552e6) delete all[k]; }
+    localStorage.setItem(RESUME_KEY,JSON.stringify(all));
+  }catch(e){}              // storage disabled/full: player still works, no resume
+}
+function forgetPos(){
+  try{
+    const all=JSON.parse(localStorage.getItem(RESUME_KEY)||'{}');
+    delete all[srcKey()];
+    localStorage.setItem(RESUME_KEY,JSON.stringify(all));
+  }catch(e){}
+}
+
+const toastEl=document.createElement('div');
+toastEl.id='toast';
+document.body.appendChild(toastEl);
+let toastTimer=null;
+function toast(msg){
+  toastEl.textContent=msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>toastEl.classList.remove('show'),4000);
+}
+function fmtTime(sec){
+  const h=Math.floor(sec/3600), m=Math.floor(sec%3600/60), s=Math.floor(sec%60);
+  const mm=h?String(m).padStart(2,'0'):String(m);
+  return (h?h+':':'')+mm+':'+String(s).padStart(2,'0');
+}
+
+let resumeDone=false;        // position restored at most once per load
+function tryResume(){
+  if(resumeDone || v.readyState<1 || !isFinite(v.duration)) return;
+  resumeDone=true;
+  const t=readPos();
+  if(t>MIN_RESUME && t < v.duration-NEAR_END){
+    try{
+      v.currentTime=t;
+      toast('Continuing from '+fmtTime(t));
+    }catch(e){}             // seek before data: ignore, start at 0
+  }
+}
+v.addEventListener('loadedmetadata',tryResume);
+v.addEventListener('durationchange',tryResume);
+
+let lastSaved=0;
+v.addEventListener('timeupdate',()=>{
+  if(v.paused || v.seeking || v.ended) return;
+  const now=Date.now();
+  if(now-lastSaved>5000){ lastSaved=now; if(v.currentTime>MIN_RESUME) writePos(v.currentTime); }
+});
+function saveNow(){
+  if(resumeDone && v.readyState>=1 && v.currentTime>MIN_RESUME &&
+     (!isFinite(v.duration) || v.currentTime < v.duration-NEAR_END)) writePos(v.currentTime);
+}
+v.addEventListener('pause',saveNow);                       // user hit pause
+window.addEventListener('pagehide',saveNow);               // closed/refreshed the tab
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') saveNow(); });
+v.addEventListener('ended',()=>forgetPos());               // finished: start over next time
+
+/* if no source could be loaded at all -> show the notice instead of a dead
+   player; a failed CORS fetch first retries once without crossOrigin */
+let retrying=false;
+function handleMediaError(){
+  if(isRemote && !corsDropped && v.hasAttribute('crossorigin')){
+    corsDropped=true; retrying=true;
+    v.removeAttribute('crossorigin');
+    v.src=q;                      // re-run resource selection, plain no-cors fetch
+    v.play().catch(()=>{});
+    return true;
+  }
+  return false;
+}
+v.addEventListener('error',()=>{ if(!handleMediaError()) show(); });
 const poll=setInterval(()=>{
   if(v.readyState>0){ clearInterval(poll); return; }              // started fine
-  if(v.error || v.networkState===3){ clearInterval(poll); show(); } // nothing to load
+  if(retrying) return;                                            // plain retry in flight
+  if(v.error || v.networkState===3){                              // nothing to load
+    if(!handleMediaError()){ clearInterval(poll); show(); }
+  }
 },600);
 function show(){ v.style.display='none'; pill.style.display='none'; fb.style.display='flex'; clearInterval(poll); }
 
