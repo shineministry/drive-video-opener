@@ -92,20 +92,21 @@ const v=document.getElementById('v'),
 const q=new URLSearchParams(location.search).get('v');
 const isRemote=!!(q && /^(https?:)?\/\//i.test(q) && !q.startsWith(location.origin));
 /* Remote load stages:
-   0 = direct fetch, CORS-clean (best — no relay traffic) … needs the bucket's
-       CORS policy to exist; fails fast without it
-   1 = same-origin relay (/proxy?u=…) — the response counts as same-origin, so
-       Web Audio may legally apply the4x boost AND seeking keeps working,
-       with no dashboard/CORS dependency
-   2 = direct plain fetch — last resort: normal volume, never silenced */
-const BASE=location.pathname.replace(/\/[^\/]*$/,'');   // '' at domain root, '/drive-video-opener' on project Pages
-const PROXY=BASE+'/proxy?u='+encodeURIComponent(q||'');
-let stage=q?(isRemote?0:-1): -1;      // -1 = local/same-origin source, nothing to retry
+   0 = direct fetch, CORS-clean (boost OK) — needs the bucket's CORS policy
+   1 = optional relay stage — only exists when RELAY is set to an endpoint
+       that sends its own CORS headers (e.g. a Cloudflare Worker/Pages URL)
+   last = plain direct fetch — normal volume, never silenced (no boost: audio
+       of a cross-origin video routed through Web Audio is forced to silence)
+   With RELAY empty the chain is simply: direct+CORS → plain. */
+const RELAY='';                       // e.g. 'https://tsom-relay.pages.dev/proxy?u='
+const PROXY=RELAY?RELAY+encodeURIComponent(q||''):'';
+const plainStage=(q&&isRemote)?(RELAY?2:1):-1;   // -1 = local/same-origin source, no fallback needed
+let stage=(q&&isRemote)?0:-1;
 function applySrc(){
   if(!q) return;
   if(stage===0){ v.crossOrigin='anonymous'; v.src=q; return; }
-  if(stage===1){ v.removeAttribute('crossorigin'); v.src=PROXY; return; }
-  v.removeAttribute('crossorigin'); v.src=q;          // plain direct (stage 2 / same-origin ?v=)
+  if(RELAY && stage===1){ v.crossOrigin='anonymous'; v.src=PROXY; return; } // relay carries its own CORS
+  v.removeAttribute('crossorigin'); v.src=q;          // plain direct fallback
 }
 if(q) applySrc();
 
@@ -127,12 +128,13 @@ const AC = window.AudioContext || window.webkitAudioContext;
 let actx=null, gain=null, attached=false;
 
 function boostAllowed(){
-  if(stage===2) return false;       // plain cross-origin fallback: boosting it would silence it
-  return true;                      // local files, same-origin, CORS-clean load, relay load
+  if(!q) return true;                // local <source> files
+  if(isRemote && stage===plainStage) return false;  // plain fallback: boosting it would silence it
+  return true;                       // same-origin, CORS-clean load, relay load
 }
 function attachBoost(){
   if(attached || !boostAllowed() || !actx || actx.state!=='running') return;
-  if(stage===0 && isRemote && !(v.crossOrigin==='anonymous' && v.readyState>=1)) return; // wait for CORS load proof
+  if(isRemote && stage<plainStage && !(v.crossOrigin==='anonymous' && v.readyState>=1)) return; // wait for CORS proof
   try{
     const src=actx.createMediaElementSource(v);
     gain=actx.createGain();
@@ -175,7 +177,7 @@ v.addEventListener('volumechange',()=>{
 /* pill: shown until playback + boost are both active (or boost can never
    apply, e.g. after a CORS fallback) */
 function syncPill(){
-  const noBoostEver = stage===2;    // plain fallback: boost can never attach there
+  const noBoostEver = !!(q && isRemote && stage===plainStage);  // plain fallback: boost can never attach there
   const ok = !v.paused && (attached || noBoostEver);
   pill.classList.toggle('gone', ok);
   pillTxt.textContent = v.paused ? 'Tap for sound' : 'Tap for 4\u00d7 volume';
@@ -272,7 +274,7 @@ v.addEventListener('ended',()=>forgetPos());               // finished: start ov
    relay -> plain direct fetch (last resort, normal volume, never silent) */
 let retrying=false;
 function handleMediaError(){
-  if(isRemote && stage<2){
+  if(isRemote && stage<plainStage){
     stage++; retrying=true;
     applySrc();                    // re-run resource selection with the next source
     v.play().catch(()=>{});
