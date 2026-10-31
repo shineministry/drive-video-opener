@@ -257,23 +257,32 @@ document.addEventListener('keydown',e=>{
   if(v.paused) v.play().catch(()=>{}); else v.pause();
 },true);
 
-/* keep the crest visible in fullscreen.
+/* ---- fullscreen ----
    Fullscreening the bare <video> paints everything OUTSIDE it behind the
-   top layer, so the watermark (and pill/toast) would disappear. Fix: swap to
-   fullscreening the page — the fixed video fills it exactly, and all overlays
-   are descendants of the fullscreen element, so they stay on top. */
+   top layer, so the watermark (and pill/toast) would disappear. So whenever
+   anything other than the page itself is fullscreened, switch the fullscreen
+   target to <html> in one step — requesting a new element REPLACES the old
+   one, so there is no exit/re-enter gap that can fail and leave the user
+   without fullscreen. The fixed video fills the page exactly: same picture.
+   F = toggle fullscreen (works in normal view and while fullscreened). */
+function pageFullscreen(){
+  const root=document.documentElement;
+  if(typeof root.requestFullscreen!=='function') return;  // e.g. iOS Safari: video-only fullscreen
+  try{ root.requestFullscreen().catch(()=>{}); }catch(e){}
+}
 document.addEventListener('fullscreenchange',()=>{
   const fe=document.fullscreenElement;
-  if(!fe || fe===document.documentElement) return;      // already page-level: nothing to do
-  const root=document.documentElement;
-  if(typeof root.requestFullscreen!=='function') return; // e.g. iOS Safari: video-only fullscreen, leave it
-  document.exitFullscreen().catch(()=>{}).then(()=>{
-    root.requestFullscreen().catch(()=>{
-      // upgrade refused (no user activation left): fall back to element fullscreen
-      try{ fe.requestFullscreen && fe.requestFullscreen().catch(()=>{}); }catch(e){}
-    });
-  });
+  if(!fe || fe===document.documentElement || fe===document.body) return;
+  pageFullscreen();                                       // replaces the element fullscreen in place
 });
+document.addEventListener('keydown',e=>{
+  if(e.code!=='KeyF' || e.repeat) return;
+  if(fb.style.display==='flex') return;
+  e.preventDefault();
+  e.stopPropagation();
+  if(document.fullscreenElement){ try{ document.exitFullscreen().catch(()=>{}); }catch(e){} }
+  else pageFullscreen();
+},true);
 </script>
 </body>
 </html>
