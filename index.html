@@ -245,9 +245,34 @@ const poll=setInterval(()=>{
 },600);
 function show(){ v.style.display='none'; pill.style.display='none'; fb.style.display='flex'; clearInterval(poll); }
 
-/* space = play/pause */
+/* space = play/pause. Capture phase + stopPropagation so the video's own
+   focused controls can't also handle the key (double-toggle = "nothing
+   happens"); preventDefault stops page scroll and button activation.
+   Runs even in fullscreen. */
 document.addEventListener('keydown',e=>{
-  if(e.code==='Space' && fb.style.display!=='flex'){ e.preventDefault(); v.paused?v.play().catch(()=>{}):v.pause(); }
+  if(e.code!=='Space' || e.repeat) return;
+  if(fb.style.display==='flex') return;                 // fallback screen: no video
+  e.preventDefault();
+  e.stopPropagation();
+  if(v.paused) v.play().catch(()=>{}); else v.pause();
+},true);
+
+/* keep the crest visible in fullscreen.
+   Fullscreening the bare <video> paints everything OUTSIDE it behind the
+   top layer, so the watermark (and pill/toast) would disappear. Fix: swap to
+   fullscreening the page — the fixed video fills it exactly, and all overlays
+   are descendants of the fullscreen element, so they stay on top. */
+document.addEventListener('fullscreenchange',()=>{
+  const fe=document.fullscreenElement;
+  if(!fe || fe===document.documentElement) return;      // already page-level: nothing to do
+  const root=document.documentElement;
+  if(typeof root.requestFullscreen!=='function') return; // e.g. iOS Safari: video-only fullscreen, leave it
+  document.exitFullscreen().catch(()=>{}).then(()=>{
+    root.requestFullscreen().catch(()=>{
+      // upgrade refused (no user activation left): fall back to element fullscreen
+      try{ fe.requestFullscreen && fe.requestFullscreen().catch(()=>{}); }catch(e){}
+    });
+  });
 });
 </script>
 </body>
