@@ -98,7 +98,8 @@ const isRemote=!!(q && /^(https?:)?\/\//i.test(q) && !q.startsWith(location.orig
        Web Audio may legally apply the4x boost AND seeking keeps working,
        with no dashboard/CORS dependency
    2 = direct plain fetch — last resort: normal volume, never silenced */
-const PROXY='/proxy?u='+encodeURIComponent(q||'');
+const BASE=location.pathname.replace(/\/[^\/]*$/,'');   // '' at domain root, '/drive-video-opener' on project Pages
+const PROXY=BASE+'/proxy?u='+encodeURIComponent(q||'');
 let stage=q?(isRemote?0:-1): -1;      // -1 = local/same-origin source, nothing to retry
 function applySrc(){
   if(!q) return;
