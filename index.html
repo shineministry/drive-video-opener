@@ -28,11 +28,29 @@
     opacity:.5;                      /* 50% transparent watermark */
     pointer-events:none;             /* clicks pass through to the video */
     z-index:4;filter:drop-shadow(0 1px 4px rgba(0,0,0,.45))}
+  #ctrls{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;align-items:center;gap:14px;
+    padding:28px 18px 13px;background:linear-gradient(transparent,rgba(0,0,0,.78));
+    transition:opacity .3s;opacity:1}
+  #ctrls.hide{opacity:0;pointer-events:none}
+  #ctrls button{background:none;border:0;color:#fff;cursor:pointer;padding:7px;border-radius:7px;
+    display:flex;line-height:0}
+  #ctrls button:hover{background:rgba(255,255,255,.16)}
+  #ctrls svg{width:22px;height:22px;fill:#fff}
+  #btnCc{font:700 12px/1 "Segoe UI",Arial,sans-serif;padding:10px 7px;color:#cfd2d6}
+  #btnCc.on{color:#8ab4f8;background:rgba(138,180,248,.16)}
+  #seek{-webkit-appearance:none;appearance:none;flex:1;height:5px;border-radius:3px;outline:none;
+    cursor:pointer;background:rgba(255,255,255,.28)}
+  #seek::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border:0;border-radius:50%;
+    background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.6)}
+  #seek::-moz-range-thumb{width:15px;height:15px;border:0;border-radius:50%;background:#fff}
+  #tCur,#tDur{font:500 13px "Segoe UI",Roboto,Arial,sans-serif;color:#fff;text-shadow:0 1px 2px #000;
+    font-variant-numeric:tabular-nums;min-width:42px;text-align:center}
+  #tDur{color:#cfd2d6}
 </style>
 </head>
 <body>
 
-<video id="v" autoplay playsinline controls preload="auto">
+<video id="v" autoplay playsinline preload="auto">
   <source src="video_hd.mp4" type="video/mp4">
   <source src="../../The.Sound.of.Music.%20(1965)%20%5B580p%5D.mp4" type="video/mp4">
   <source src="video.mp4" type="video/mp4">
@@ -40,6 +58,15 @@
 </video>
 
 <img id="crest" src="crest-logo.png" alt="Shineil Mathias crest">
+
+<div id="ctrls">
+  <button id="btnPlay" title="Play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+  <span id="tCur">0:00</span>
+  <input id="seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek">
+  <span id="tDur">0:00</span>
+  <button id="btnCc" title="Subtitles">CC</button>
+  <button id="btnFs" title="Fullscreen"><svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg></button>
+</div>
 
 <div id="fallback">
   <b>Video not available here</b>
@@ -118,9 +145,10 @@ v.play().catch(()=>{ /* blocked: video stays paused on its first frame, sound on
 ensureContext();                                    // boost starts immediately if permitted
 v.addEventListener('loadedmetadata',attachBoost);   // remote: attach once CORS load is proven
 
-/* first tap anywhere: (re)start playback with sound + attach the boost */
+/* first tap anywhere: (re)attach the boost. Starting playback is handled by
+   the picture's own click handler and the play button, so a tap on the video
+   toggles play/pause instead of always starting. */
 document.addEventListener('pointerdown',()=>{
-  if(v.paused) v.play().catch(()=>{});
   ensureContext();
 },{capture:true});
 v.addEventListener('volumechange',()=>{
@@ -243,7 +271,7 @@ const poll=setInterval(()=>{
     if(!handleMediaError()){ clearInterval(poll); show(); }
   }
 },600);
-function show(){ v.style.display='none'; pill.style.display='none'; fb.style.display='flex'; clearInterval(poll); }
+function show(){ v.style.display='none'; pill.style.display='none'; ctrls.style.display='none'; fb.style.display='flex'; clearInterval(poll); }
 
 /* space = play/pause. Capture phase + stopPropagation so the video's own
    focused controls can't also handle the key (double-toggle = "nothing
@@ -283,6 +311,83 @@ document.addEventListener('keydown',e=>{
   if(document.fullscreenElement){ try{ document.exitFullscreen().catch(()=>{}); }catch(e){} }
   else pageFullscreen();
 },true);
+
+/* ---- custom control bar ----
+   The native controls were removed because their "⋮" menu exposes a
+   Download item we cannot switch off (and right-click "Save video as…" is a
+   browser menu). This bar keeps everything else the player needs —
+   play/pause, seek, time, subtitles on/off, fullscreen — and nothing that
+   offers a download. It hides itself after a few idle seconds while playing
+   and comes back on mouse move / tap. */
+const ctrls=document.getElementById('ctrls'),
+      btnPlay=document.getElementById('btnPlay'),
+      seek=document.getElementById('seek'),
+      tCur=document.getElementById('tCur'),
+      tDur=document.getElementById('tDur'),
+      btnCc=document.getElementById('btnCc'),
+      btnFs=document.getElementById('btnFs');
+const ICON_PLAY='M8 5v14l11-7z',
+      ICON_PAUSE='M6 19h4V5H6v14zm8-14v14h4V5h-4z',
+      ICON_FS='M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z',
+      ICON_FS_EXIT='M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z';
+let scrubbing=false, hideTimer=null;
+
+function fmtClock(sec){ return isFinite(sec)&&sec>=0?fmtTime(sec):'0:00'; }
+function syncCtrls(){
+  btnPlay.innerHTML='<svg viewBox="0 0 24 24"><path d="'+(v.paused?ICON_PLAY:ICON_PAUSE)+'"/></svg>';
+  btnPlay.title=v.paused?'Play':'Pause';
+  btnFs.innerHTML='<svg viewBox="0 0 24 24"><path d="'+(document.fullscreenElement?ICON_FS_EXIT:ICON_FS)+'"/></svg>';
+}
+function showCtrls(){
+  ctrls.classList.remove('hide');
+  clearTimeout(hideTimer);
+  if(!v.paused) hideTimer=setTimeout(()=>ctrls.classList.add('hide'),2600);
+}
+function togglePlay(){ v.paused?v.play().catch(()=>{}):v.pause(); showCtrls(); }
+
+btnPlay.addEventListener('click',togglePlay);
+v.addEventListener('click',togglePlay);          // click the picture = play/pause
+document.addEventListener('mousemove',showCtrls);
+['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,showCtrls,{capture:true}));
+['play','pause','playing','ended'].forEach(ev=>v.addEventListener(ev,()=>{ syncCtrls(); showCtrls(); }));
+document.addEventListener('fullscreenchange',()=>{ syncCtrls(); showCtrls(); });
+
+seek.addEventListener('input',()=>{
+  scrubbing=true;
+  if(isFinite(v.duration)&&v.duration>0){
+    const t=seek.value/1000*v.duration;
+    tCur.textContent=fmtClock(t);
+    v.currentTime=t;
+  }
+});
+seek.addEventListener('change',()=>{ scrubbing=false; });
+v.addEventListener('timeupdate',()=>{
+  if(scrubbing||!isFinite(v.duration)||v.duration<=0) return;
+  seek.value=Math.round(v.currentTime/v.duration*1000);
+  tCur.textContent=fmtClock(v.currentTime);
+});
+v.addEventListener('loadedmetadata',()=>{
+  tDur.textContent=fmtClock(v.duration);
+  const tt=v.textTracks&&v.textTracks[0];
+  btnCc.classList.toggle('on',!!(tt&&tt.mode==='showing'));
+});
+btnCc.addEventListener('click',()=>{
+  const tt=v.textTracks&&v.textTracks[0];
+  if(!tt) return;
+  const showing=tt.mode==='showing';
+  tt.mode=showing?'disabled':'showing';
+  btnCc.classList.toggle('on',!showing);
+});
+btnFs.addEventListener('click',()=>{
+  if(document.fullscreenElement){ try{ document.exitFullscreen().catch(()=>{}); }catch(e){} }
+  else pageFullscreen();
+  showCtrls();
+});
+
+/* no right-click "Save video as…" on the picture */
+v.addEventListener('contextmenu',e=>e.preventDefault());
+
+syncCtrls(); showCtrls();
 </script>
 </body>
 </html>
