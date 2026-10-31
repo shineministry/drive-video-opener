@@ -80,23 +80,12 @@
     font:700 17px "Segoe UI",Arial,sans-serif;letter-spacing:.06em;
     box-shadow:0 4px 18px rgba(229,9,20,.4);transition:background .18s,transform .18s}
   #btnGo:hover{background:#f6121d;transform:translateY(-1px)}
-  #btnTrailer{border:1px solid rgba(255,255,255,.35);cursor:pointer;border-radius:5px;padding:13px 26px;
-    background:rgba(29,29,33,.72);color:#fff;font:600 15px "Segoe UI",Arial,sans-serif;
-    display:inline-flex;align-items:center;gap:9px;transition:background .18s}
-  #btnTrailer:hover{background:rgba(60,60,66,.85)}
-  #btnTrailer svg{width:17px;height:17px;fill:#fff}
   #introNote{margin-top:18px;color:#7d828a;font:400 12.5px/1.6 "Segoe UI",Arial,sans-serif}
-  /* trailer overlay */
-  #trailerWrap{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.94);display:none;
-    align-items:center;justify-content:center;flex-direction:column;gap:14px}
-  #trailerWrap.on{display:flex}
-  #trv{max-width:min(1100px,94vw);max-height:78vh;width:100%;background:#000;border-radius:6px;
-    box-shadow:0 12px 60px rgba(0,0,0,.8)}
-  #trailerWrap .close{position:absolute;top:18px;right:22px;width:44px;height:44px;border-radius:50%;
-    border:0;cursor:pointer;background:rgba(255,255,255,.12);color:#fff;font-size:24px;line-height:1}
-  #trailerWrap .close:hover{background:rgba(255,255,255,.24)}
-  #trailerWrap .cap{color:#8ab4f8;font:600 12.5px "Segoe UI",Arial,sans-serif;letter-spacing:.22em;
-    text-transform:uppercase}
+  /* trailer plays as the landing-page background; hero stills stay underneath
+     as the fallback until it can play (and if it never can) */
+  #trv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;
+    transition:opacity 1.4s ease;background:#0a0a0c}
+  #trv.on{opacity:1}
 </style>
 </head>
 <body>
@@ -109,6 +98,7 @@
     <img src="hero3.jpg" alt="">
     <img src="hero4.jpg" alt="">
     <img src="hero5.jpg" alt="">
+    <video id="trv" playsinline loop preload="auto" muted></video>
   </div>
   <div id="introCard">
     <span id="introTag">Shineil Mathias presents</span>
@@ -132,17 +122,9 @@
     </p>
     <div id="introBtns">
       <button id="btnGo">▶ START</button>
-      <button id="btnTrailer"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> TRAILER</button>
     </div>
-    <div id="introNote">Never muted · boosted sound · subtitles on · your place is remembered automatically</div>
+    <div id="introNote">Trailer plays in the background — tap anywhere for sound · never muted · boosted · your place is remembered</div>
   </div>
-</div>
-
-<!-- ============ trailer overlay ============ -->
-<div id="trailerWrap">
-  <button class="close" id="trvClose" title="Close trailer">×</button>
-  <div class="cap">The Sound of Music — Trailer</div>
-  <video id="trv" playsinline controls preload="none"></video>
 </div>
 
 <video id="v" autoplay playsinline preload="auto">
@@ -182,8 +164,7 @@ const v=document.getElementById('v'),
       pillTxt=document.getElementById('soundtxt');
 
 /* ---- landing page state (declared early: the key handlers below ask it) ---- */
-let introOpen=true,          // true while the introductory page covers the player
-    trailerOpen=false;
+let introOpen=true;              // true while the introductory page covers the player
 /* while the landing page is up the movie must NOT play behind it */
 v.addEventListener('play',()=>{ if(introOpen) v.pause(); },{capture:true});
 
@@ -400,8 +381,6 @@ function show(){ v.style.display='none'; pill.style.display='none'; ctrls.style.
 document.addEventListener('keydown',e=>{
   if(e.code!=='Space' || e.repeat) return;
   if(typeof introOpen!=='undefined' && introOpen) return;   // landing page: let Space press the START button
-  if(trailerOpen){ e.preventDefault(); e.stopPropagation();
-    trv.paused?trv.play().catch(()=>{}):trv.pause(); return; }
   if(fb.style.display==='flex') return;                 // fallback screen: no video
   e.preventDefault();
   e.stopPropagation();
@@ -510,20 +489,69 @@ btnFs.addEventListener('click',()=>{
 /* no right-click "Save video as…" on the picture */
 v.addEventListener('contextmenu',e=>e.preventDefault());
 
-/* ---- landing page: slideshow, START/CONTINUE, trailer ---- */
+/* ---- landing page: background trailer + slideshow fallback + START/CONTINUE ---- */
 const intro=document.getElementById('intro'),
       shots=Array.from(document.querySelectorAll('#introShots img')),
       btnGo=document.getElementById('btnGo'),
-      btnTrailer=document.getElementById('btnTrailer'),
-      trailerWrap=document.getElementById('trailerWrap'),
-      trv=document.getElementById('trv'),
-      trvClose=document.getElementById('trvClose');
+      trv=document.getElementById('trv');
 const TRAILER_URL='https://pub-85706559f57d4bc5b17d1bd3a9567bfb.r2.dev/sound-of-music-trailer.mp4';
 
-/* crossfading hero stills (with a slow Ken-Burns drift set in CSS) */
+/* The trailer IS the background of the landing page (it loops under the text).
+   The hero stills stay underneath as a live fallback: while the trailer
+   buffers — or if it can never load — the slideshow shows instead, and the
+   trailer only fades in over it once it is actually playing. */
+function trailerBoostReady(){
+  // only on a provably CORS-clean load; otherwise routing it through Web
+  // Audio would turn the background silent
+  return actx && actx.state==='running' &&
+         trv.crossOrigin==='anonymous' && trv.readyState>=1;
+}
+function attachTrailerBoost(){
+  if(!trailerBoostReady() || trv.__boosted) return;
+  try{
+    const src=actx.createMediaElementSource(trv);
+    const g=actx.createGain(); g.gain.value=BOOST;
+    const lim=actx.createDynamicsCompressor();
+    lim.threshold.value=-6; lim.knee.value=4; lim.ratio.value=12;
+    lim.attack.value=0.002; lim.release.value=0.2;
+    src.connect(g); g.connect(lim); lim.connect(actx.destination);
+    trv.__boosted=true;
+  }catch(e){}
+}
+let trvRetried=false;
+function startTrailer(){
+  if(!introOpen) return;
+  if(!trv.src){ trv.crossOrigin='anonymous'; trv.src=TRAILER_URL; }
+  attachTrailerBoost();
+  trv.play().catch(()=>{                       // unmuted autoplay refused
+    trv.muted=true;                            // show it silently for now…
+    trv.play().catch(()=>{});
+  });
+}
+trv.addEventListener('error',()=>{
+  if(trv.hasAttribute('crossorigin') && !trvRetried){     // CORS hiccup: plain retry, no boost
+    trvRetried=true;
+    trv.removeAttribute('crossorigin');
+    trv.src=TRAILER_URL;
+    trv.play().catch(()=>{});
+  }
+});
+['loadedmetadata','play','playing'].forEach(ev=>trv.addEventListener(ev,attachTrailerBoost));
+trv.addEventListener('playing',()=>{ trv.classList.add('on'); });   // fade over the stills
+/* muted fallback (autoplay policy): the first tap anywhere gives it sound */
+document.addEventListener('pointerdown',()=>{
+  if(introOpen && trv.src && trv.muted){
+    ensureContext();                            // gesture -> running AudioContext
+    trv.muted=false; trv.volume=1;
+    attachTrailerBoost();                       // may need the resumed context
+    if(trv.paused) trv.play().catch(()=>{});
+  }
+},{capture:true});
+startTrailer();
+/* slideshow runs as the fallback layer (and until the trailer is ready) */
 let shotI=0;
 setInterval(()=>{
-  if(!introOpen) return;
+  if(!introOpen || trv.classList.contains('on')) return;   // trailer took over
   shots[shotI].classList.remove('on');
   shotI=(shotI+1)%shots.length;
   shots[shotI].classList.add('on');
@@ -547,59 +575,11 @@ syncGoBtn();
 btnGo.addEventListener('click',()=>{
   introOpen=false;
   intro.classList.add('gone');
+  trv.pause(); trv.removeAttribute('src'); trv.load();   // free the buffer: trailer done
   ensureContext();
   v.play().catch(()=>{});
   showCtrls();
 });
-
-/* ---- trailer: a montage cut from the film, hosted like the movie itself ---- */
-function attachTrailerBoost(){
-  // only on a provably CORS-clean load; otherwise the trailer would go silent
-  if(!actx || actx.state!=='running') return;
-  if(!(trv.crossOrigin==='anonymous' && trv.readyState>=1)) return;
-  if(trv.__boosted) return;
-  try{
-    const src=actx.createMediaElementSource(trv);
-    const g=actx.createGain(); g.gain.value=BOOST;
-    const lim=actx.createDynamicsCompressor();
-    lim.threshold.value=-6; lim.knee.value=4; lim.ratio.value=12;
-    lim.attack.value=0.002; lim.release.value=0.2;
-    src.connect(g); g.connect(lim); lim.connect(actx.destination);
-    trv.__boosted=true;
-  }catch(e){}
-}
-let trvRetried=false;
-trv.addEventListener('error',()=>{
-  if(trv.hasAttribute('crossorigin') && !trvRetried){     // CORS hiccup: plain retry, no boost
-    trvRetried=true;
-    trv.removeAttribute('crossorigin');
-    trv.src=TRAILER_URL;
-    trv.play().catch(()=>{});
-  }
-});
-trv.addEventListener('loadedmetadata',attachTrailerBoost);
-['play','playing'].forEach(ev=>trv.addEventListener(ev,attachTrailerBoost));
-
-btnTrailer.addEventListener('click',e=>{
-  e.stopPropagation();
-  ensureContext();                              // user gesture -> running AudioContext
-  trailerOpen=true;
-  trailerWrap.classList.add('on');
-  if(!trv.src){ trv.crossOrigin='anonymous'; trv.src=TRAILER_URL; }
-  trv.muted=false; trv.volume=1;
-  attachTrailerBoost();
-  trv.play().catch(()=>{});
-});
-function closeTrailer(){
-  trailerOpen=false;
-  trv.pause();
-  trailerWrap.classList.remove('on');
-}
-trvClose.addEventListener('click',e=>{ e.stopPropagation(); closeTrailer(); });
-trailerWrap.addEventListener('click',e=>{ if(e.target===trailerWrap) closeTrailer(); });
-document.addEventListener('keydown',e=>{
-  if(e.code==='Escape' && trailerOpen){ closeTrailer(); }
-},true);
 
 syncCtrls(); showCtrls();
 </script>
