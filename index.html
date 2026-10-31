@@ -579,14 +579,34 @@ btnGo.addEventListener('click',()=>{
   if(!introOpen) return;                     // ignore double-clicks mid-fade
   introOpen=false;
   ensureContext();
+  /* audio crossfade: movie voice rises as the trailer's fades away */
+  if(gain && actx && actx.state==='running'){
+    try{
+      const g=gain.gain, t=g.context.currentTime;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(0.0001,t);
+      g.linearRampToValueAtTime(BOOST,t+0.7);   // movie volume swells in
+    }catch(e){}
+  }
+  const tv0=trv.volume||1, tr0=performance.now();
+  const audioFade=setInterval(()=>{
+    const k=Math.min(1,(performance.now()-tr0)/500);
+    try{ trv.volume=Math.max(0,tv0*(1-k)); }catch(e){}
+    if(k>=1) clearInterval(audioFade);
+  },40);
   /* start the picture FIRST, underneath the landing page: by the time the
      fade finishes the movie is already rolling, so nothing "pops" in */
   v.play().catch(()=>{});
   intro.classList.add('gone');                // smooth .85s crossfade out
   let finished=false;
-  const done=()=>{                            // after the fade: trailer off, page out
-    if(finished) return; finished=true;
+  const done=e=>{                             // after the fade: trailer off, page out
+    if(finished) return;
+    // ONLY the landing page's own fade may end the transition — children
+    // (button hover, slideshow stills…) bubble their own transitionend up
+    if(e && (e.target!==intro || e.propertyName!=='opacity')) return;
+    finished=true;
     intro.classList.add('off');
+    clearInterval(audioFade);
     trv.pause(); trv.removeAttribute('src'); trv.load();   // free the buffer
     intro.removeEventListener('transitionend',done);
     showCtrls(); syncCtrls();
