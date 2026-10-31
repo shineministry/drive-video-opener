@@ -24,6 +24,10 @@
     font:500 14px "Segoe UI",Roboto,Arial,sans-serif;opacity:0;pointer-events:none;
     transition:opacity .35s,transform .35s;z-index:6;box-shadow:0 1px 8px rgba(0,0,0,.55)}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #crest{position:fixed;top:16px;right:18px;width:min(230px,26vw);height:auto;
+    opacity:.5;                      /* 50% transparent watermark */
+    pointer-events:none;             /* clicks pass through to the video */
+    z-index:4;filter:drop-shadow(0 1px 4px rgba(0,0,0,.45))}
 </style>
 </head>
 <body>
@@ -34,6 +38,8 @@
   <source src="video.mp4" type="video/mp4">
   <track kind="subtitles" src="subtitles.vtt" srclang="en" label="English" default>
 </video>
+
+<img id="crest" src="crest-logo.png" alt="Shineil Mathias crest">
 
 <div id="fallback">
   <b>Video not available here</b>
