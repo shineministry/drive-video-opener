@@ -50,8 +50,11 @@
 
   /* ---- landing / intro page (Netflix-style) ---- */
   #intro{position:fixed;inset:0;z-index:10;background:#0a0a0c;display:flex;align-items:flex-end;
-    overflow:hidden}
-  #intro.gone{display:none}
+    overflow:hidden;transition:opacity .85s ease,transform .85s ease}
+  #intro.gone{opacity:0;transform:scale(1.03);pointer-events:none}   /* graceful fade-out … */
+  #intro.off{display:none}                                          /* … then removed from view */
+  #introCard{transition:opacity .85s ease,transform .85s ease}
+  #intro.gone #introCard{opacity:0;transform:translateY(22px)}       /* text drifts up and out */
   #introShots{position:absolute;inset:0}
   #introShots img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;
     transition:opacity 1.6s ease;transform:scale(1.04);animation:panZoom 12s ease-in-out infinite alternate}
@@ -573,12 +576,23 @@ v.addEventListener('loadedmetadata',syncGoBtn);
 syncGoBtn();
 
 btnGo.addEventListener('click',()=>{
+  if(!introOpen) return;                     // ignore double-clicks mid-fade
   introOpen=false;
-  intro.classList.add('gone');
-  trv.pause(); trv.removeAttribute('src'); trv.load();   // free the buffer: trailer done
   ensureContext();
+  /* start the picture FIRST, underneath the landing page: by the time the
+     fade finishes the movie is already rolling, so nothing "pops" in */
   v.play().catch(()=>{});
-  showCtrls();
+  intro.classList.add('gone');                // smooth .85s crossfade out
+  let finished=false;
+  const done=()=>{                            // after the fade: trailer off, page out
+    if(finished) return; finished=true;
+    intro.classList.add('off');
+    trv.pause(); trv.removeAttribute('src'); trv.load();   // free the buffer
+    intro.removeEventListener('transitionend',done);
+    showCtrls(); syncCtrls();
+  };
+  intro.addEventListener('transitionend',done);
+  setTimeout(done,1200);                      // safety net if transitionend never fires
 });
 
 syncCtrls(); showCtrls();
