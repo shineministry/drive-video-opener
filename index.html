@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>The Sound of Music (1965)</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <style>
@@ -47,6 +47,26 @@
   #tCur,#tDur{font:500 13px "Segoe UI",Roboto,Arial,sans-serif;color:#fff;text-shadow:0 1px 2px #000;
     font-variant-numeric:tabular-nums;min-width:42px;text-align:center}
   #tDur{color:#cfd2d6}
+
+  /* ---- touch parity: phones (Android + iOS web) get finger-sized controls ----
+     Same custom bar as desktop — never the native controller (its ⋮ menu is
+     the only place a Download option could appear). 44px = Apple/Google
+     minimum tap target; safe-area inset keeps the bar clear of Android's
+     gesture pill / iPhone home indicator. */
+  @media (pointer:coarse){
+    #ctrls{gap:8px;padding:26px 10px calc(14px + env(safe-area-inset-bottom,0px))}
+    #ctrls button{min-width:44px;min-height:44px;padding:11px;border-radius:10px;justify-content:center}
+    #ctrls svg{width:26px;height:26px}
+    #btnCc{font-size:13.5px;padding:13px 10px;min-height:44px;border-radius:10px}
+    #seek{height:8px;border-radius:4px;touch-action:none}   /* thicker track, no scroll-hijack while dragging */
+    #seek::-webkit-slider-thumb{width:22px;height:22px;box-shadow:0 1px 5px rgba(0,0,0,.7)}
+    #seek::-moz-range-thumb{width:22px;height:22px}
+    #tCur,#tDur{font-size:14.5px;min-width:48px}
+    #sound{min-height:44px}
+    html,body,#v,#ctrls,#ctrls button{ -webkit-tap-highlight-color:transparent }  /* kill Android's blue tap flash */
+  }
+  /* Android/iOS: no hover states to rely on — a press needs a visible feedback */
+  @media (pointer:coarse){ #ctrls button:active{background:rgba(255,255,255,.24)} }
 
   /* ---- landing / intro page (Netflix-style) ---- */
   #intro{position:fixed;inset:0;z-index:10;background:#0a0a0c;display:flex;align-items:flex-end;
@@ -519,7 +539,9 @@ function syncCtrls(){
 function showCtrls(){
   ctrls.classList.remove('hide');
   clearTimeout(hideTimer);
-  if(!v.paused) hideTimer=setTimeout(()=>ctrls.classList.add('hide'),2600);
+  /* touch screens have no mousemove to keep the bar alive → linger longer */
+  const linger=(window.matchMedia&&matchMedia('(pointer:coarse)').matches)?4200:2600;
+  if(!v.paused) hideTimer=setTimeout(()=>ctrls.classList.add('hide'),linger);
 }
 function togglePlay(){ v.paused?v.play().catch(()=>{}):v.pause(); showCtrls(); }
 
@@ -529,6 +551,18 @@ document.addEventListener('mousemove',showCtrls);
 ['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,showCtrls,{capture:true}));
 ['play','pause','playing','ended'].forEach(ev=>v.addEventListener(ev,()=>{ syncCtrls(); showCtrls(); }));
 document.addEventListener('fullscreenchange',()=>{ syncCtrls(); showCtrls(); });
+document.addEventListener('webkitfullscreenchange',()=>{ syncCtrls(); showCtrls(); });  // older Android/WebKit
+
+/* never let native controls appear (their ⋮ menu is the only place a
+   Download option could show up). Defensive: even if some extension or
+   future code flips the attribute, snap it straight back off. */
+function lockNoNativeControls(){
+  if(v.controls){ v.controls=false; }
+}
+new MutationObserver(lockNoNativeControls).observe(v,{attributes:true,attributeFilter:['controls']});
+v.controls=false;
+['loadstart','loadedmetadata','enterpictureinpicture'].forEach(ev=>
+  v.addEventListener(ev,lockNoNativeControls));
 
 seek.addEventListener('input',()=>{
   scrubbing=true;
