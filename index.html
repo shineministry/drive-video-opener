@@ -390,31 +390,102 @@ document.addEventListener('keydown',e=>{
   if(v.paused) v.play().catch(()=>{}); else v.pause();
 },true);
 
-/* ---- fullscreen ----
+/* ---- fullscreen (desktop + phone) ----
    Fullscreening the bare <video> paints everything OUTSIDE it behind the
    top layer, so the watermark (and pill/toast) would disappear. So whenever
    anything other than the page itself is fullscreened, switch the fullscreen
    target to <html> in one step — requesting a new element REPLACES the old
    one, so there is no exit/re-enter gap that can fail and leave the user
    without fullscreen. The fixed video fills the page exactly: same picture.
-   F = toggle fullscreen (works in normal view and while fullscreened). */
+   PHONE: iOS Safari has no page-level fullscreen at all (requestFullscreen
+   is undefined on <html>) — there the ONLY way is the video element's own
+   native fullscreen (webkitEnterFullscreen). Android sometimes refuses the
+   page request too, so every failure falls back down the chain:
+   page fullscreen → picture fullscreen → iOS native picture fullscreen. */
+function fsActive(){
+  return !!(document.fullscreenElement || document.webkitFullscreenElement ||
+            v.webkitDisplayingFullscreen);
+}
+/* iOS detection (iPadOS 13+ hides behind a Mac UA) */
+const IS_IOS=/iP(hone|ad|od)/.test(navigator.userAgent) ||
+             (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+/* webviews (Facebook/Instagram/WhatsApp…) disable fullscreen entirely */
+const IN_APP=/\b(FBAN|FBAV|Instagram|Twitter|Line|MicroMessenger|WhatsApp|Snapchat|Reddit)\b/i
+             .test(navigator.userAgent);
+let pendingFs=false;   // iOS refused because the media had no data yet: retry when it does
+
+function toastFsUnsupported(){
+  toast(IS_IOS
+    ? (IN_APP ? 'Fullscreen is blocked in this app — open the link in Safari'
+              : 'Fullscreen blocked — tap “aA ▸ Request Desktop Website” or open in Safari')
+    : 'Fullscreen is unavailable in this browser — try Chrome');
+}
+function armFsRetry(){
+  if(!pendingFs) return;
+  pendingFs=false;
+  try{ if(typeof v.webkitEnterFullscreen==='function') v.webkitEnterFullscreen(); }catch(e){}
+}
+function videoFullscreen(){
+  const canNative=typeof v.webkitEnterFullscreen==='function';
+  /* iOS throws when the video has no data yet — retry once it has some,
+     instead of failing the tap entirely */
+  if(canNative && v.readyState<1){ pendingFs=true; return; }
+  try{
+    if(canNative){                              // iOS Safari: the ONLY road, must run inside this tap
+      v.webkitEnterFullscreen();
+      /* some iOS webviews expose the method but silently do nothing — diagnose */
+      setTimeout(()=>{ if(!fsActive()) toastFsUnsupported(); },700);
+      return;
+    }
+    const r=v.requestFullscreen||v.webkitRequestFullscreen;
+    if(r){ const p=r.call(v); if(p&&p.then) p.catch(()=>toastFsUnsupported()); return; }
+  }catch(e){
+    pendingFs=canNative && v.readyState<1;
+  }
+  if(!pendingFs) toastFsUnsupported();
+}
 function pageFullscreen(){
   const root=document.documentElement;
-  if(typeof root.requestFullscreen!=='function') return;  // e.g. iOS Safari: video-only fullscreen
-  try{ root.requestFullscreen().catch(()=>{}); }catch(e){}
+  /* iPhone/iPad: page-level fullscreen doesn't exist (or rejects) — go
+     straight for the video element's native fullscreen while the tap is
+     still a valid user gesture */
+  if(IS_IOS){ videoFullscreen(); return; }
+  const req=root.requestFullscreen||root.webkitRequestFullscreen;  // webkit prefix: older Android/WebKit
+  if(!req){ videoFullscreen(); return; }               // no page fullscreen anywhere
+  try{
+    const p=req.call(root);
+    if(p&&p.then) p.catch(()=>videoFullscreen());      // refused (iframe/permission): try the picture
+  }catch(e){ videoFullscreen(); }
 }
+function exitFullscreen(){
+  try{
+    if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+    else if(document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
+  }catch(e){}
+  if(v.webkitDisplayingFullscreen && typeof v.webkitExitFullscreen==='function'){
+    try{ v.webkitExitFullscreen(); }catch(e){}          // iOS native video fullscreen
+  }
+}
+function toggleFullscreen(){ fsActive() ? exitFullscreen() : pageFullscreen(); }
+
 document.addEventListener('fullscreenchange',()=>{
   const fe=document.fullscreenElement;
   if(!fe || fe===document.documentElement || fe===document.body) return;
   pageFullscreen();                                       // replaces the element fullscreen in place
 });
+/* iOS fires these instead of fullscreenchange for its native video mode */
+v.addEventListener('webkitbeginfullscreen',()=>{ pendingFs=false; syncCtrls(); showCtrls(); });
+v.addEventListener('webkitendfullscreen',()=>{ syncCtrls(); showCtrls(); });
+/* iOS refused the fullscreen tap only because the movie had no data yet:
+   the moment data arrives, enter fullscreen for the user */
+v.addEventListener('loadedmetadata',armFsRetry);
+v.addEventListener('canplay',armFsRetry);
 document.addEventListener('keydown',e=>{
   if(e.code!=='KeyF' || e.repeat) return;
   if(fb.style.display==='flex') return;
   e.preventDefault();
   e.stopPropagation();
-  if(document.fullscreenElement){ try{ document.exitFullscreen().catch(()=>{}); }catch(e){} }
-  else pageFullscreen();
+  toggleFullscreen();
 },true);
 
 /* ---- custom control bar ----
@@ -441,7 +512,9 @@ function fmtClock(sec){ return isFinite(sec)&&sec>=0?fmtTime(sec):'0:00'; }
 function syncCtrls(){
   btnPlay.innerHTML='<svg viewBox="0 0 24 24"><path d="'+(v.paused?ICON_PLAY:ICON_PAUSE)+'"/></svg>';
   btnPlay.title=v.paused?'Play':'Pause';
-  btnFs.innerHTML='<svg viewBox="0 0 24 24"><path d="'+(document.fullscreenElement?ICON_FS_EXIT:ICON_FS)+'"/></svg>';
+  /* fsActive() also covers iOS native video fullscreen (document.fullscreenElement stays null there) */
+  btnFs.innerHTML='<svg viewBox="0 0 24 24"><path d="'+(fsActive()?ICON_FS_EXIT:ICON_FS)+'"/></svg>';
+  btnFs.title=fsActive()?'Exit fullscreen':'Fullscreen';
 }
 function showCtrls(){
   ctrls.classList.remove('hide');
@@ -484,8 +557,9 @@ btnCc.addEventListener('click',()=>{
   btnCc.classList.toggle('on',!showing);
 });
 btnFs.addEventListener('click',()=>{
-  if(document.fullscreenElement){ try{ document.exitFullscreen().catch(()=>{}); }catch(e){} }
-  else pageFullscreen();
+  /* toggleFullscreen covers iOS: document.fullscreenElement is null there
+     even while the native video fullscreen is showing */
+  toggleFullscreen();
   showCtrls();
 });
 
